@@ -1,4 +1,4 @@
-const CACHE = 'dc-health-ahu-v1';
+const CACHE = 'dc-health-ahu-v2';
 const ASSETS = ['./', './index.html', './manifest-ahu.json', './icon-ahu-192.png', './icon-ahu-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS))); });
 self.addEventListener('fetch', e => {

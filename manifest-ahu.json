@@ -1,11 +1,11 @@
 {
-  "name": "机房健康度评估(AHU版)",
-  "short_name": "健康度AHU",
+  "name": "AHU健康度评估",
+  "short_name": "AHU健康度评估",
   "description": "间接蒸发冷AHU版本机房健康度评估系统",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#2563EB",
+  "theme_color": "#16A34A",
   "background_color": "#F5F5F5",
   "icons": [
     {
