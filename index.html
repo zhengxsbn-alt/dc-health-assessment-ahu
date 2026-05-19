@@ -249,7 +249,7 @@ function compPh(f,mw,cb){
     var c=document.createElement('canvas');c.width=w;c.height=h;
     c.getContext('2d').drawImage(img,0,0,w,h);
     URL.revokeObjectURL(url);
-    cb(c.toDataURL('image/jpeg',.7));
+    cb(c.toDataURL('image/jpeg',.9));
   };
   img.onerror=function(){
     URL.revokeObjectURL(url);
@@ -261,7 +261,7 @@ function compPh(f,mw,cb){
 }function trigPh(ck,i){phTgt=iid(ck,i);document.getElementById('phIn').click()}
 function onPhoto(e){
   var f=e.target.files[0];if(!f)return;
-  compPh(f,800,function(du){
+  compPh(f,1600,function(du){
     var id=phTgt;
     if(!D.photos[id])D.photos[id]=[];
     if(D.photos[id].length>=10){alert('每项最多上传10张照片');return}
