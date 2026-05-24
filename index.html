@@ -155,13 +155,14 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
   <div style="display:flex;align-items:center">
     <button class="bk-btn" id="bkBtn" style="display:none" onclick="goBack()">&#8249;</button>
     <h1 id="hdrT">机房健康度评估</h1>
-    <span id="verBadge" style="margin-left:8px;font-size:10px;background:rgba(255,255,255,.25);padding:2px 6px;border-radius:8px;cursor:pointer">v3</span>
+    <span id="verBadge" style="margin-left:8px;font-size:10px;background:rgba(255,255,255,.25);padding:2px 6px;border-radius:8px;cursor:pointer">v4</span>
   </div>
   <div class="hdr-acts">
     <button class="hdr-btn" onclick="openCosConfig()" style="margin-right:6px">☁️</button>
-    <button class="hdr-btn" onclick="exportWord()" style="margin-right:6px">📄 导出评估报告</button>
-    <button class="hdr-btn" onclick="clearAll()" style="margin-right:6px">🗑️ 清空</button>
-    <button class="hdr-btn" onclick="exportXlsx()">📥 导出</button>
+    <button class="hdr-btn" onclick="document.getElementById('verBadge').click()" style="margin-right:6px">🔄</button>
+    <button class="hdr-btn" onclick="clearAll()" style="margin-right:6px">🗑️</button>
+    <button class="hdr-btn" onclick="exportWord()" style="margin-right:6px;background:rgba(13,148,136,.8)">📄</button>
+    <button class="hdr-btn" onclick="exportXlsx()">📥</button>
   </div>
 </div>
 <div class="sav" id="savInd">✓ 已保存</div>
@@ -896,12 +897,23 @@ function exportWord(){
 }
 
 document.getElementById('verBadge').addEventListener('click',function(){
+  showToast('🔄 正在检查更新...');
   if('serviceWorker' in navigator){
     navigator.serviceWorker.getRegistration().then(function(reg){
-      if(reg){reg.update().then(function(){location.reload(true);});}
-      else{location.reload(true);}
+      if(reg){
+        reg.update().then(function(newReg){
+          if(newReg&&newReg.waiting){
+            showToast('✅ 发现新版本，正在刷新...');
+            setTimeout(function(){location.reload();},1000);
+          }else{
+            showToast('✅ 已是最新版本');
+          }
+        }).catch(function(){
+          showToast('✅ 已是最新版本');
+        });
+      }else{location.reload();}
     });
-  }else{location.reload(true);}
+  }else{location.reload();}
 });
 
 function init(){renderOv();renderInfo()}
