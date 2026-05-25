@@ -227,9 +227,25 @@ var curTab='overview',curCat=null,sf='all';
 var d2f=new Set(),d3f=new Set(),expC=new Set();
 var phTgt=null,svTm=null;
 
-function ld(){try{var r=localStorage.getItem(LSK);if(r){var p=JSON.parse(r);return{info:p.info||{},items:p.items||{},photos:{}}}}catch(e){}return{info:{},items:{},photos:{}}}
-function sv(){try{localStorage.setItem(LSK,JSON.stringify({info:D.info,items:D.items}))}catch(e){try{localStorage.setItem(LSK,JSON.stringify({info:D.info,items:D.items}))}catch(e2){showToast('❌ 存储空间不足')}}shSv()}
-function rmOldPh(){}
+function ld(){
+  var raw=localStorage.getItem(LSK);
+  var parsed=raw?JSON.parse(raw):{};
+  // Clean up old photo data from localStorage (now in IndexedDB)
+  if(parsed.photos&&Object.keys(parsed.photos).length>0){
+    delete parsed.photos;
+    try{localStorage.setItem(LSK,JSON.stringify({info:parsed.info||{},items:parsed.items||{}}))}catch(e){}
+  }
+  return{info:parsed.info||{},items:parsed.items||{},photos:{}};
+}
+function sv(){try{localStorage.setItem(LSK,JSON.stringify({info:D.info,items:D.items}))}catch(e){migrateCleanLS();try{localStorage.setItem(LSK,JSON.stringify({info:D.info,items:D.items}))}catch(e2){showToast('❌ 存储空间不足')}}shSv()}
+function migrateCleanLS(){
+  try{
+    var raw=localStorage.getItem(LSK);
+    if(!raw)return;
+    var d=JSON.parse(raw);
+    if(d.photos){delete d.photos;localStorage.setItem(LSK,JSON.stringify({info:d.info||{},items:d.items||{}}));}
+  }catch(e){}
+}
 function shSv(){var e=document.getElementById('savInd');e.classList.add('on');clearTimeout(svTm);svTm=setTimeout(function(){e.classList.remove('on')},1500)}
 function asv(){sv()}
 
