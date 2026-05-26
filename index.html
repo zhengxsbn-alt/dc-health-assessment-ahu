@@ -164,9 +164,156 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
 @keyframes fabPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}50%{box-shadow:0 0 0 10px rgba(239,68,68,0)}}
 .voice-target{border:2px solid #F97316 !important;background:#FFF7ED !important;box-shadow:0 0 0 3px rgba(249,115,22,.25);animation:voiceTargetPulse 1.5s infinite}
 @keyframes voiceTargetPulse{0%,100%{box-shadow:0 0 0 3px rgba(249,115,22,.25)}50%{box-shadow:0 0 0 6px rgba(249,115,22,.1)}}
+/* Auth Screen */
+.auth-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:var(--g50);display:flex;align-items:center;justify-content:center;overflow-y:auto}
+.auth-overlay.hidden{display:none}
+.auth-card{width:90%;max-width:380px;background:#fff;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.12);overflow:hidden;margin:20px 0}
+.auth-header{text-align:center;padding:28px 20px 16px;background:linear-gradient(135deg,var(--pri),var(--pri-l));color:#fff}
+.auth-header h2{font-size:20px;font-weight:700;margin-bottom:4px}
+.auth-header p{font-size:13px;opacity:.85}
+.auth-tabs{display:flex;border-bottom:2px solid var(--g100)}
+.auth-tab{flex:1;padding:12px 0;text-align:center;font-size:14px;font-weight:600;color:var(--g500);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.auth-tab.on{color:var(--pri);border-bottom-color:var(--pri)}
+.auth-body{padding:20px}
+.auth-pane{display:none}
+.auth-pane.on{display:block}
+.auth-fg{margin-bottom:14px}
+.auth-fg label{display:block;font-size:13px;font-weight:500;color:var(--g600);margin-bottom:4px}
+.auth-fg input{width:100%;padding:10px 12px;border:1px solid var(--g300);border-radius:8px;font-size:14px;outline:none;transition:border-color .2s}
+.auth-fg input:focus{border-color:var(--pri)}
+.auth-btn{width:100%;padding:12px;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .15s}
+.auth-btn:active{transform:scale(.97)}
+.auth-btn-pri{background:var(--pri);color:#fff}
+.auth-btn-pri:disabled{opacity:.5;cursor:not-allowed}
+.auth-code-box{background:var(--g50);border:1px dashed var(--g300);border-radius:8px;padding:12px;font-size:12px;word-break:break-all;color:var(--g700);margin-top:10px;position:relative}
+.auth-code-box .copy-btn{position:absolute;top:8px;right:8px;background:var(--pri);color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer}
+.auth-wait{text-align:center;padding:20px 0;color:var(--g500);font-size:14px}
+.auth-wait .spinner{display:inline-block;width:24px;height:24px;border:3px solid var(--g200);border-top-color:var(--pri);border-radius:50%;animation:authSpin 1s linear infinite;margin-bottom:8px}
+@keyframes authSpin{to{transform:rotate(360deg)}}
+.auth-err{color:var(--err);font-size:13px;margin-top:8px;display:none}
+.auth-err.show{display:block}
+/* Admin Panel Modal */
+.admin-modal{position:fixed;top:0;left:0;right:0;bottom:0;z-index:5000;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
+.admin-modal.show{display:flex}
+.admin-box{width:92%;max-width:420px;background:#fff;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.2);max-height:80vh;overflow-y:auto}
+.admin-box-hdr{padding:16px 20px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between}
+.admin-box-hdr h3{font-size:16px;font-weight:600;color:var(--g800)}
+.admin-close{background:none;border:none;font-size:22px;color:var(--g500);cursor:pointer;padding:4px}
+.admin-box-body{padding:20px}
+.admin-sec{margin-bottom:20px}
+.admin-sec h4{font-size:14px;font-weight:600;color:var(--g700);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.admin-user-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--g50);border-radius:8px;margin-bottom:6px}
+.admin-user-name{font-size:14px;color:var(--g800)}
+.admin-user-id{font-size:11px;color:var(--g400)}
+.admin-revoke-btn{background:none;border:1px solid var(--err);color:var(--err);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer}
+.admin-revoke-btn:active{background:var(--err);color:#fff}
 </style>
 </head>
 <body>
+<!-- Auth Screen Overlay -->
+<div class="auth-overlay" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h2 id="authTitle">AHU健康度评估</h2>
+      <p>请登录后使用</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab on" id="authTabApply" onclick="AUTH.switchTab('apply')">申请使用</button>
+      <button class="auth-tab" id="authTabAdmin" onclick="AUTH.switchTab('admin')">管理员登录</button>
+    </div>
+    <div class="auth-body">
+      <!-- Apply pane -->
+      <div class="auth-pane on" id="authPaneApply">
+        <div class="auth-fg">
+          <label>您的姓名</label>
+          <input type="text" id="authName" placeholder="请输入姓名" autocomplete="off">
+        </div>
+        <button class="auth-btn auth-btn-pri" id="authApplyBtn" onclick="AUTH.submitApply()">提交申请</button>
+        <div id="authCodeArea" style="display:none">
+          <div style="font-size:13px;color:var(--g600);margin-top:14px;margin-bottom:4px">📋 您的申请码（发给管理员）：</div>
+          <div class="auth-code-box" id="authCodeBox">
+            <button class="copy-btn" onclick="AUTH.copyCode()">复制</button>
+            <span id="authCodeText"></span>
+          </div>
+        </div>
+        <div class="auth-err" id="authApplyErr"></div>
+      </div>
+      <!-- Admin login pane -->
+      <div class="auth-pane" id="authPaneAdmin">
+        <div id="authAdminSetup" style="display:none">
+          <div style="font-size:13px;color:var(--g600);margin-bottom:10px">首次使用，请设置管理员密码：</div>
+          <div class="auth-fg">
+            <label>设置密码</label>
+            <input type="password" id="authSetupPwd" placeholder="请设置管理员密码">
+          </div>
+          <div class="auth-fg">
+            <label>确认密码</label>
+            <input type="password" id="authSetupPwd2" placeholder="再次输入密码">
+          </div>
+          <button class="auth-btn auth-btn-pri" onclick="AUTH.setupAdmin()">确认设置</button>
+          <div class="auth-err" id="authSetupErr"></div>
+        </div>
+        <div id="authAdminLogin">
+          <div class="auth-fg">
+            <label>管理员密码</label>
+            <input type="password" id="authAdminPwd" placeholder="请输入管理员密码">
+          </div>
+          <button class="auth-btn auth-btn-pri" onclick="AUTH.adminLogin()">登录</button>
+          <div class="auth-err" id="authAdminErr"></div>
+        </div>
+      </div>
+      <!-- Wait for approval -->
+      <div class="auth-pane" id="authPaneWait">
+        <div class="auth-wait">
+          <div class="spinner"></div>
+          <div>申请已提交，等待管理员审批...</div>
+          <div style="font-size:12px;color:var(--g400);margin-top:8px">请将申请码发送给管理员，审批后重新打开即可使用</div>
+          <button class="auth-btn auth-btn-pri" style="margin-top:16px" onclick="AUTH.refreshAccess()">刷新权限</button>
+          <div class="auth-err" id="authWaitErr"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Panel Modal -->
+<div class="admin-modal" id="adminModal">
+  <div class="admin-box">
+    <div class="admin-box-hdr">
+      <h3>👥 权限管理</h3>
+      <button class="admin-close" onclick="AUTH.closeAdminPanel()">&times;</button>
+    </div>
+    <div class="admin-box-body">
+      <div class="admin-sec">
+        <h4>✅ 审批申请</h4>
+        <div class="auth-fg">
+          <label>粘贴申请码</label>
+          <input type="text" id="adminAppCode" placeholder="粘贴用户发来的申请码" autocomplete="off">
+        </div>
+        <button class="auth-btn auth-btn-pri" onclick="AUTH.approveUser()">审批通过</button>
+        <div class="auth-err" id="adminApproveErr"></div>
+      </div>
+      <div class="admin-sec">
+        <h4>👥 已授权用户</h4>
+        <div id="adminUserList"></div>
+      </div>
+      <div class="admin-sec">
+        <h4>🔑 修改管理员密码</h4>
+        <div class="auth-fg">
+          <label>当前密码</label>
+          <input type="password" id="adminOldPwd" placeholder="输入当前密码">
+        </div>
+        <div class="auth-fg">
+          <label>新密码</label>
+          <input type="password" id="adminNewPwd" placeholder="输入新密码">
+        </div>
+        <button class="auth-btn auth-btn-pri" onclick="AUTH.changeAdminPwd()">修改密码</button>
+        <div class="auth-err" id="adminPwdErr"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="hdr">
 <div style="display:flex;align-items:center;min-width:0;flex:1">
   <button class="bk-btn" id="bkBtn" style="display:none" onclick="goBack()">&#8249;</button>
@@ -186,6 +333,9 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
     <button class="hdr-menu-item" onclick="exportPhotos();closeHdrMenu()"><span class="mi">🖼️</span>导出照片备份</button>
     <button class="hdr-menu-item" onclick="exportJSON();closeHdrMenu()"><span class="mi">💾</span>导出数据(JSON)</button>
     <button class="hdr-menu-item" onclick="importJSON();closeHdrMenu()"><span class="mi">📂</span>导入数据(JSON)</button>
+    <div class="hdr-menu-divider"></div>
+    <button class="hdr-menu-item" id="menuAuthMgmt" onclick="AUTH.openAdminPanel();closeHdrMenu()" style="display:none"><span class="mi">👥</span>权限管理</button>
+    <button class="hdr-menu-item" id="menuLogout" onclick="AUTH.doLogout();closeHdrMenu()" style="display:none"><span class="mi">🚪</span>退出登录</button>
     <div class="hdr-menu-divider"></div>
     <button class="hdr-menu-item" onclick="clearAll();closeHdrMenu()" style="color:var(--err)"><span class="mi">🗑️</span>清空数据</button>
   </div>
@@ -412,6 +562,40 @@ function uploadToCOS(file,cosPath,cb){
   xhr.send(file);
 }
 
+function uploadToCOSWithACL(file, cosPath, acl, cb){
+  var secretId=localStorage.getItem('cos_secret_id');
+  var secretKey=localStorage.getItem('cos_secret_key');
+  if(!secretId||!secretKey){cb&&cb(new Error('COS not configured'));return;}
+  var bucket='zhenghuanqiong-1435085173';
+  var region='ap-beijing';
+  var hostStr=bucket+'.cos.'+region+'.myqcloud.com';
+  var now=Math.floor(Date.now()/1000);
+  var keyTime=now+';'+(now+1800);
+  var signKey=CryptoJS.HmacSHA1(keyTime,secretKey).toString(CryptoJS.enc.Hex);
+  var httpMethod='put';
+  var uriPathname='/'+cosPath;
+  var headersStr='host='+hostStr;
+  var headerList='host';
+  if(acl){headersStr+='\nx-cos-acl='+acl;headerList+=';x-cos-acl';}
+  var formatString=httpMethod+'\n'+uriPathname+'\n\n'+headersStr+'\n';
+  var formatStringHash=CryptoJS.SHA1(formatString).toString();
+  var stringToSign='sha1\n'+keyTime+'\n'+formatStringHash+'\n';
+  var signature=CryptoJS.HmacSHA1(stringToSign,signKey).toString(CryptoJS.enc.Hex);
+  var auth='q-sign-algorithm=sha1&q-ak='+secretId+'&q-sign-time='+keyTime+'&q-key-time='+keyTime+'&q-header-list='+headerList+'&q-url-param-list=&q-signature='+signature;
+  var url='https://'+hostStr+'/'+cosPath.split('/').map(function(s){return encodeURIComponent(s);}).join('/');
+  var xhr=new XMLHttpRequest();
+  xhr.open('PUT',url,true);
+  xhr.setRequestHeader('Authorization',auth);
+  xhr.setRequestHeader('Content-Type',file.type||'application/json');
+  if(acl) xhr.setRequestHeader('x-cos-acl',acl);
+  xhr.onload=function(){
+    if(xhr.status>=200&&xhr.status<300){cb&&cb(null,url);}
+    else{cb&&cb(new Error('COS upload failed: '+xhr.status));}
+  };
+  xhr.onerror=function(){cb&&cb(new Error('COS network error'));};
+  xhr.send(file);
+}
+
 function cosAutoUpload(b64,cosPath,stateKey){
   if(localStorage.getItem('cos_auto_upload')!=='true')return;
   var secretId=localStorage.getItem('cos_secret_id');
@@ -466,10 +650,344 @@ function cosUpdateStatus(){
 }
 
 var D=ld();
-loadAllPhotosDB(function(ph){
-  D.photos=ph||{};
-  init();
-});
+
+// ============ AUTH Module ============
+var AUTH={
+  COS_PATH:'permissions/ahu/permissions.json',
+  COS_PUBLIC_URL:'https://zhenghuanqiong-1435085173.cos.ap-beijing.myqcloud.com/',
+  LS_PREFIX:'auth_ahu_',
+  APP_TITLE:'AHU健康度评估',
+  deviceId:null,
+  session:null,
+  userName:null,
+  permissions:null,
+  _appCode:'',
+
+  generateDeviceId:function(){
+    var c='abcdefghijklmnopqrstuvwxyz0123456789';
+    var id='';
+    for(var i=0;i<12;i++) id+=c.charAt(Math.floor(Math.random()*c.length));
+    return id;
+  },
+
+  fetchPermissions:function(cb){
+    var url=this.COS_PUBLIC_URL+this.COS_PATH+'?t='+Date.now();
+    var xhr=new XMLHttpRequest();
+    xhr.open('GET',url,true);
+    xhr.onload=function(){
+      if(xhr.status===200){
+        try{cb(JSON.parse(xhr.responseText));}catch(e){cb(null);}
+      }else if(xhr.status===404){cb({notFound:true});}
+      else{cb(null);}
+    };
+    xhr.onerror=function(){cb(null);};
+    xhr.send();
+  },
+
+  savePermissions:function(permData,cb){
+    var json=JSON.stringify(permData,null,2);
+    var blob=new Blob([json],{type:'application/json'});
+    uploadToCOSWithACL(blob,this.COS_PATH,'public-read',cb);
+  },
+
+  checkAccess:function(perm){
+    if(!perm||!perm.approved)return false;
+    return perm.approved.some(function(u){return u.deviceId===AUTH.deviceId;});
+  },
+
+  verifyAdminPassword:function(password,perm){
+    if(!perm||!perm.adminHash)return false;
+    var parts=perm.adminHash.split(':');
+    if(parts.length!==3)return false;
+    var hash=CryptoJS.SHA256(parts[1]+password).toString();
+    return hash===parts[2];
+  },
+
+  hashPassword:function(password){
+    var salt=Math.random().toString(36).substr(2,8);
+    var hash=CryptoJS.SHA256(salt+password).toString();
+    return 'sha256:'+salt+':'+hash;
+  },
+
+  generateAppCode:function(name){
+    var data=JSON.stringify({n:name,d:this.deviceId,t:Date.now()});
+    return btoa(unescape(encodeURIComponent(data)));
+  },
+
+  decodeAppCode:function(code){
+    try{
+      var data=JSON.parse(decodeURIComponent(escape(atob(code))));
+      return data;
+    }catch(e){return null;}
+  },
+
+  init:function(){
+    this.deviceId=localStorage.getItem(this.LS_PREFIX+'device_id')||this.generateDeviceId();
+    localStorage.setItem(this.LS_PREFIX+'device_id',this.deviceId);
+    this.session=localStorage.getItem(this.LS_PREFIX+'session')||'';
+    this.userName=localStorage.getItem(this.LS_PREFIX+'user_name')||'';
+    this._appCode=localStorage.getItem(this.LS_PREFIX+'app_code')||'';
+  },
+
+  login:function(session,name){
+    this.session=session;
+    this.userName=name||'';
+    localStorage.setItem(this.LS_PREFIX+'session',session);
+    localStorage.setItem(this.LS_PREFIX+'user_name',name||'');
+  },
+
+  logout:function(){
+    this.session='';
+    this.userName='';
+    localStorage.setItem(this.LS_PREFIX+'session','');
+    localStorage.setItem(this.LS_PREFIX+'user_name','');
+  },
+
+  switchTab:function(tab){
+    document.getElementById('authTabApply').classList.toggle('on',tab==='apply');
+    document.getElementById('authTabAdmin').classList.toggle('on',tab==='admin');
+    document.getElementById('authPaneApply').classList.toggle('on',tab==='apply');
+    document.getElementById('authPaneAdmin').classList.toggle('on',tab==='admin');
+  },
+
+  submitApply:function(){
+    var name=document.getElementById('authName').value.trim();
+    if(!name){this._showErr('authApplyErr','请输入姓名');return;}
+    var code=this.generateAppCode(name);
+    this._appCode=code;
+    localStorage.setItem(this.LS_PREFIX+'app_code',code);
+    document.getElementById('authCodeArea').style.display='block';
+    document.getElementById('authCodeText').textContent=code;
+    document.getElementById('authApplyBtn').textContent='已提交申请';
+    document.getElementById('authApplyBtn').disabled=true;
+    this._hideErr('authApplyErr');
+    this.login('pending',name);
+  },
+
+  copyCode:function(){
+    var code=this._appCode;
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(code).then(function(){showToast('✅ 已复制申请码');});
+    }else{
+      var ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('✅ 已复制申请码');
+    }
+  },
+
+  adminLogin:function(){
+    var pwd=document.getElementById('authAdminPwd').value;
+    if(!pwd){this._showErr('authAdminErr','请输入密码');return;}
+    if(!this.permissions){this._showErr('authAdminErr','权限数据未加载');return;}
+    if(this.verifyAdminPassword(pwd,this.permissions)){
+      this.login('admin','管理员');
+      this._enterApp();
+    }else{
+      this._showErr('authAdminErr','密码错误');
+    }
+  },
+
+  setupAdmin:function(){
+    var pwd=document.getElementById('authSetupPwd').value;
+    var pwd2=document.getElementById('authSetupPwd2').value;
+    if(!pwd){this._showErr('authSetupErr','请设置密码');return;}
+    if(pwd!==pwd2){this._showErr('authSetupErr','两次密码不一致');return;}
+    if(pwd.length<4){this._showErr('authSetupErr','密码至少4位');return;}
+    var self=this;
+    var permData={adminHash:this.hashPassword(pwd),approved:[],version:1};
+    this.savePermissions(permData,function(err){
+      if(err){self._showErr('authSetupErr','保存失败: '+err.message);return;}
+      self.permissions=permData;
+      self.login('admin','管理员');
+      self._enterApp();
+    });
+  },
+
+  refreshAccess:function(){
+    var self=this;
+    this.fetchPermissions(function(perm){
+      if(!perm||perm.notFound){self._showErr('authWaitErr','无法获取权限数据');return;}
+      self.permissions=perm;
+      if(self.checkAccess(perm)){
+        self.login('user',self.userName||'用户');
+        self._enterApp();
+      }else{
+        self._showErr('authWaitErr','尚未获得审批，请联系管理员');
+      }
+    });
+  },
+
+  doLogout:function(){
+    this.logout();
+    this._showAuthScreen();
+  },
+
+  openAdminPanel:function(){
+    this._renderUserList();
+    document.getElementById('adminModal').classList.add('show');
+  },
+
+  closeAdminPanel:function(){
+    document.getElementById('adminModal').classList.remove('show');
+  },
+
+  approveUser:function(){
+    var code=document.getElementById('adminAppCode').value.trim();
+    if(!code){this._showErr('adminApproveErr','请粘贴申请码');return;}
+    var data=this.decodeAppCode(code);
+    if(!data||!data.n||!data.d){this._showErr('adminApproveErr','无效的申请码');return;}
+    var self=this;
+    this.fetchPermissions(function(perm){
+      if(!perm||perm.notFound){self._showErr('adminApproveErr','权限数据不存在');return;}
+      if(!perm.approved)perm.approved=[];
+      var exists=perm.approved.some(function(u){return u.deviceId===data.d;});
+      if(exists){self._showErr('adminApproveErr','该用户已授权');return;}
+      perm.approved.push({deviceId:data.d,name:data.n,approvedAt:new Date().toISOString()});
+      self.savePermissions(perm,function(err){
+        if(err){self._showErr('adminApproveErr','保存失败: '+err.message);return;}
+        self.permissions=perm;
+        document.getElementById('adminAppCode').value='';
+        self._hideErr('adminApproveErr');
+        self._renderUserList();
+        showToast('✅ 已授权用户: '+data.n);
+      });
+    });
+  },
+
+  revokeUser:function(deviceId){
+    var self=this;
+    this.fetchPermissions(function(perm){
+      if(!perm||!perm.approved)return;
+      perm.approved=perm.approved.filter(function(u){return u.deviceId!==deviceId;});
+      self.savePermissions(perm,function(err){
+        if(err){showToast('❌ 撤销失败: '+err.message);return;}
+        self.permissions=perm;
+        self._renderUserList();
+        showToast('✅ 已撤销权限');
+      });
+    });
+  },
+
+  changeAdminPwd:function(){
+    var oldPwd=document.getElementById('adminOldPwd').value;
+    var newPwd=document.getElementById('adminNewPwd').value;
+    if(!oldPwd||!newPwd){this._showErr('adminPwdErr','请填写完整');return;}
+    if(newPwd.length<4){this._showErr('adminPwdErr','新密码至少4位');return;}
+    if(!this.verifyAdminPassword(oldPwd,this.permissions)){this._showErr('adminPwdErr','当前密码错误');return;}
+    var self=this;
+    this.fetchPermissions(function(perm){
+      if(!perm){self._showErr('adminPwdErr','无法获取权限数据');return;}
+      perm.adminHash=self.hashPassword(newPwd);
+      self.savePermissions(perm,function(err){
+        if(err){self._showErr('adminPwdErr','保存失败: '+err.message);return;}
+        self.permissions=perm;
+        document.getElementById('adminOldPwd').value='';
+        document.getElementById('adminNewPwd').value='';
+        self._hideErr('adminPwdErr');
+        showToast('✅ 密码已修改');
+      });
+    });
+  },
+
+  _showErr:function(id,msg){
+    var el=document.getElementById(id);if(!el)return;
+    el.textContent=msg;el.classList.add('show');
+  },
+
+  _hideErr:function(id){
+    var el=document.getElementById(id);if(!el)return;
+    el.classList.remove('show');
+  },
+
+  _showAuthScreen:function(){
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('menuAuthMgmt').style.display='none';
+    document.getElementById('menuLogout').style.display='none';
+    // Reset form state
+    document.getElementById('authApplyBtn').textContent='提交申请';
+    document.getElementById('authApplyBtn').disabled=false;
+    document.getElementById('authCodeArea').style.display='none';
+    this._hideErr('authApplyErr');
+    this._hideErr('authAdminErr');
+    this._hideErr('authSetupErr');
+    this._hideErr('authWaitErr');
+    // If has pending app code, show wait pane
+    if(this.session==='pending'&&this._appCode){
+      this._showWaitPane();
+    }
+  },
+
+  _showWaitPane:function(){
+    document.getElementById('authTabApply').classList.remove('on');
+    document.getElementById('authTabAdmin').classList.remove('on');
+    document.getElementById('authPaneApply').classList.remove('on');
+    document.getElementById('authPaneAdmin').classList.remove('on');
+    document.getElementById('authPaneWait').classList.add('on');
+  },
+
+  _enterApp:function(){
+    document.getElementById('authScreen').classList.add('hidden');
+    if(this.session==='admin'){
+      document.getElementById('menuAuthMgmt').style.display='';
+    }else{
+      document.getElementById('menuAuthMgmt').style.display='none';
+    }
+    document.getElementById('menuLogout').style.display='';
+    // Init app
+    loadAllPhotosDB(function(ph){
+      D.photos=ph||{};
+      init();
+    });
+  },
+
+  _renderUserList:function(){
+    var list=document.getElementById('adminUserList');
+    if(!this.permissions||!this.permissions.approved||!this.permissions.approved.length){
+      list.innerHTML='<div style="color:var(--g400);font-size:13px;text-align:center;padding:12px">暂无授权用户</div>';
+      return;
+    }
+    var html='';
+    this.permissions.approved.forEach(function(u){
+      html+='<div class="admin-user-item"><div><div class="admin-user-name">'+u.name+'</div><div class="admin-user-id">ID: '+u.deviceId+'</div></div><button class="admin-revoke-btn" onclick="AUTH.revokeUser(\''+u.deviceId+'\')">撤销</button></div>';
+    });
+    list.innerHTML=html;
+  },
+
+  startAuthFlow:function(){
+    var self=this;
+    this.init();
+    this.fetchPermissions(function(perm){
+      if(!perm||perm.notFound){
+        // First time setup - show admin setup form
+        self.permissions=null;
+        document.getElementById('authAdminSetup').style.display='block';
+        document.getElementById('authAdminLogin').style.display='none';
+        self.switchTab('admin');
+        self._showAuthScreen();
+        return;
+      }
+      self.permissions=perm;
+      document.getElementById('authAdminSetup').style.display='none';
+      document.getElementById('authAdminLogin').style.display='block';
+      // Check existing session
+      if(self.session==='admin'){
+        self._enterApp();
+      }else if(self.session==='user'||self.session==='pending'){
+        if(self.checkAccess(perm)){
+          self.login('user',self.userName||'用户');
+          self._enterApp();
+        }else if(self.session==='pending'){
+          self._showAuthScreen();
+          self._showWaitPane();
+        }else{
+          self._showAuthScreen();
+        }
+      }else{
+        self._showAuthScreen();
+      }
+    });
+  }
+};
+
+AUTH.startAuthFlow();
 
 function iid(ck,i){return ck+'_'+i}
 function gci(ck){var c=CATS.find(function(x){return x.k===ck});return c?(AD[c.s]||[]):[]}
