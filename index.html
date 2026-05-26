@@ -251,12 +251,8 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
             <input type="password" id="authSetupPwd2" placeholder="再次输入密码">
           </div>
           <div class="auth-fg" style="margin-top:10px">
-            <label>云存储密钥ID <span style="font-size:11px;color:var(--g400)">(必填)</span></label>
-            <input type="text" id="authCosSid" placeholder="COS SecretId" autocomplete="off">
-          </div>
-          <div class="auth-fg">
-            <label>云存储密钥Key <span style="font-size:11px;color:var(--g400)">(必填)</span></label>
-            <input type="password" id="authCosSkey" placeholder="COS SecretKey" autocomplete="off">
+            <label>GitHub Token <span style="font-size:11px;color:var(--g400)">(必填，需repo权限)</span></label>
+            <input type="password" id="authGhToken" placeholder="ghp_xxxx..." autocomplete="off">
           </div>
           <button class="auth-btn auth-btn-pri" onclick="AUTH.setupAdmin()">确认设置</button>
           <div class="auth-err" id="authSetupErr"></div>
@@ -570,60 +566,6 @@ function uploadToCOS(file,cosPath,cb){
   xhr.send(file);
 }
 
-function setCOSObjectACL(cosPath, acl, cb){
-  var secretId=localStorage.getItem('cos_secret_id');
-  var secretKey=localStorage.getItem('cos_secret_key');
-  if(!secretId||!secretKey){cb&&cb(new Error('COS not configured'));return;}
-  var bucket='zhenghuanqiong-1435085173';
-  var region='ap-beijing';
-  var hostStr=bucket+'.cos.'+region+'.myqcloud.com';
-  var now=Math.floor(Date.now()/1000);
-  var keyTime=now+';'+(now+1800);
-  var signKey=CryptoJS.HmacSHA1(keyTime,secretKey).toString(CryptoJS.enc.Hex);
-  var httpMethod='put';
-  var uriPathname='/'+cosPath;
-  var headersStr='host='+hostStr+'\nx-cos-acl='+acl;
-  var headerList='host;x-cos-acl';
-  var formatString=httpMethod+'\n'+uriPathname+'\nacl=\n'+headersStr+'\n';
-  var formatStringHash=CryptoJS.SHA1(formatString).toString();
-  var stringToSign='sha1\n'+keyTime+'\n'+formatStringHash+'\n';
-  var signature=CryptoJS.HmacSHA1(stringToSign,signKey).toString(CryptoJS.enc.Hex);
-  var auth='q-sign-algorithm=sha1&q-ak='+secretId+'&q-sign-time='+keyTime+'&q-key-time='+keyTime+'&q-header-list='+headerList+'&q-url-param-list=acl&q-signature='+signature;
-  var url='https://'+hostStr+'/'+cosPath.split('/').map(function(s){return encodeURIComponent(s);}).join('/')+'?acl';
-  var xhr=new XMLHttpRequest();
-  xhr.open('PUT',url,true);
-  xhr.setRequestHeader('Authorization',auth);
-  xhr.setRequestHeader('x-cos-acl',acl);
-  xhr.onload=function(){
-    if(xhr.status>=200&&xhr.status<300){cb&&cb(null);}
-    else{cb&&cb(new Error('ACL设置失败('+xhr.status+')'));}
-  };
-  xhr.onerror=function(){cb&&cb(new Error('网络错误'));};
-  xhr.send('');
-}
-
-function uploadToCOSWithACL(file, cosPath, acl, cb){
-  // Step 1: upload file without ACL (avoids 403 from "Block Public Access")
-  uploadToCOS(file, cosPath, function(err, url){
-    if(err){cb&&cb(err);return;}
-    if(!acl){cb&&cb(null,url);return;}
-    // Step 2: try to set ACL separately
-    setCOSObjectACL(cosPath, acl, function(aclErr){
-      if(!aclErr){cb&&cb(null,url);return;}
-      // Step 3: ACL failed, check if file is publicly accessible anyway (e.g. via bucket policy)
-      var checkUrl=url+'?t='+Date.now();
-      var cxhr=new XMLHttpRequest();
-      cxhr.open('GET',checkUrl,true);
-      cxhr.onload=function(){
-        if(cxhr.status===200){cb&&cb(null,url);}
-        else{cb&&cb(new Error('文件已上传但无法公开访问。请到COS控制台关闭"阻止公共访问"：\n存储桶→安全管理→阻止公共访问→关闭，然后重新设置管理员密码'));}
-      };
-      cxhr.onerror=function(){cb&&cb(null,url);};
-      cxhr.send();
-    });
-  });
-}
-
 function cosAutoUpload(b64,cosPath,stateKey){
   if(localStorage.getItem('cos_auto_upload')!=='true')return;
   var secretId=localStorage.getItem('cos_secret_id');
@@ -681,8 +623,10 @@ var D=ld();
 
 // ============ AUTH Module ============
 var AUTH={
-  COS_PATH:'permissions/ahu/permissions.json',
-  COS_PUBLIC_URL:'https://zhenghuanqiong-1435085173.cos.ap-beijing.myqcloud.com/',
+  GH_REPO:'dc-health-assessment-ahu',
+  GH_PATH:'permissions.json',
+  GH_PAGES_URL:'https://zhengxsbn-alt.github.io/dc-health-assessment-ahu/permission.json',
+  GH_OWNER:'zhengxsbn-alt',
   LS_PREFIX:'auth_ahu_',
   APP_TITLE:'AHU健康度评估',
   deviceId:null,
@@ -699,7 +643,7 @@ var AUTH={
   },
 
   fetchPermissions:function(cb){
-    var url=this.COS_PUBLIC_URL+this.COS_PATH+'?t='+Date.now();
+    var url=this.GH_PAGES_URL+'?t='+Date.now();
     var xhr=new XMLHttpRequest();
     xhr.open('GET',url,true);
     xhr.onload=function(){
@@ -713,9 +657,36 @@ var AUTH={
   },
 
   savePermissions:function(permData,cb){
+    var token=localStorage.getItem('gh_token');
+    if(!token){cb&&cb(new Error('GitHub Token未配置'));return;}
+    var self=this;
     var json=JSON.stringify(permData,null,2);
-    var blob=new Blob([json],{type:'application/json'});
-    uploadToCOSWithACL(blob,this.COS_PATH,'public-read',cb);
+    var content=btoa(unescape(encodeURIComponent(json)));
+    var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_PATH;
+    // Get existing file SHA for update
+    var gxhr=new XMLHttpRequest();
+    gxhr.open('GET',apiUrl,true);
+    gxhr.setRequestHeader('Authorization','token '+token);
+    gxhr.setRequestHeader('Accept','application/vnd.github.v3+json');
+    gxhr.onload=function(){
+      var sha=null;
+      if(gxhr.status===200){try{sha=JSON.parse(gxhr.responseText).sha;}catch(e){}}
+      var putData={message:'Update permissions',content:content,branch:'main'};
+      if(sha)putData.sha=sha;
+      var pxhr=new XMLHttpRequest();
+      pxhr.open('PUT',apiUrl,true);
+      pxhr.setRequestHeader('Authorization','token '+token);
+      pxhr.setRequestHeader('Accept','application/vnd.github.v3+json');
+      pxhr.setRequestHeader('Content-Type','application/json');
+      pxhr.onload=function(){
+        if(pxhr.status>=200&&pxhr.status<300){cb&&cb(null);}
+        else{var msg='GitHub写入失败';try{var e=JSON.parse(pxhr.responseText);msg=e.message||msg;}catch(ex){}cb&&cb(new Error(msg));}
+      };
+      pxhr.onerror=function(){cb&&cb(new Error('网络错误'));};
+      pxhr.send(JSON.stringify(putData));
+    };
+    gxhr.onerror=function(){cb&&cb(new Error('网络错误'));};
+    gxhr.send();
   },
 
   checkAccess:function(perm){
@@ -819,12 +790,10 @@ var AUTH={
     if(!pwd){this._showErr('authSetupErr','请设置密码');return;}
     if(pwd!==pwd2){this._showErr('authSetupErr','两次密码不一致');return;}
     if(pwd.length<4){this._showErr('authSetupErr','密码至少4位');return;}
-    // Save COS credentials from auth form
-    var sid=document.getElementById('authCosSid').value.trim();
-    var skey=document.getElementById('authCosSkey').value.trim();
-    if(!sid||!skey){this._showErr('authSetupErr','请填写云存储密钥');return;}
-    localStorage.setItem('cos_secret_id',sid);
-    localStorage.setItem('cos_secret_key',skey);
+    // Save GitHub Token from auth form
+    var token=document.getElementById('authGhToken').value.trim();
+    if(!token){this._showErr('authSetupErr','请填写GitHub Token');return;}
+    localStorage.setItem('gh_token',token);
     var self=this;
     var permData={adminHash:this.hashPassword(pwd),approved:[],version:1};
     this.savePermissions(permData,function(err){
