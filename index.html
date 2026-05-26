@@ -792,7 +792,10 @@ var AUTH={
     if(pwd.length<4){this._showErr('authSetupErr','密码至少4位');return;}
     // Save GitHub Token from auth form
     var token=document.getElementById('authGhToken').value.trim();
-    if(!token){this._showErr('authSetupErr','请填写GitHub Token');return;}
+    // Handle accidental triple-paste: extract first ghp_... token
+    var m=token.match(/ghp_[A-Za-z0-9]{36}/);
+    if(m)token=m[0];
+    if(!token||token.indexOf('ghp_')!==0){this._showErr('authSetupErr','Token格式不正确，应以ghp_开头');return;}
     localStorage.setItem('gh_token',token);
     var self=this;
     var permData={adminHash:this.hashPassword(pwd),approved:[],version:1};
