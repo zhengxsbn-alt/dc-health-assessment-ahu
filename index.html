@@ -19,11 +19,11 @@
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;color:var(--g800);background:var(--g50);-webkit-font-smoothing:antialiased;padding-bottom:68px;overflow-x:hidden}
 .hdr{position:sticky;top:0;z-index:100;background:var(--pri);color:#fff;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shm)}
 .hdr h1{font-size:17px;font-weight:600;letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60vw}
-.hdr-acts{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.hdr-acts{display:flex;gap:6px;align-items:center;flex-shrink:0;position:relative}
 .hdr-btn{background:rgba(255,255,255,.2);border:none;color:#fff;padding:6px 10px;border-radius:var(--rs);font-size:13px;cursor:pointer}
 .hdr-btn:active{background:rgba(255,255,255,.3)}
 .hdr-btn svg{vertical-align:middle;margin-top:-1px}
-.hdr-menu{position:relative}
+.hdr-menu-divider{height:1px;background:var(--g200);margin:4px 0}
 .hdr-menu-list{display:none;position:absolute;top:36px;right:0;background:#fff;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);min-width:140px;z-index:300;overflow:hidden}
 .hdr-menu-list.show{display:block}
 .hdr-menu-item{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:14px;color:var(--g700);cursor:pointer;border:none;background:none;width:100%;text-align:left}
@@ -168,30 +168,29 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
 </head>
 <body>
 <div class="hdr">
-  <div style="display:flex;align-items:center;min-width:0;flex:1">
-    <button class="bk-btn" id="bkBtn" style="display:none" onclick="goBack()">&#8249;</button>
-    <h1 id="hdrT">机房健康度评估</h1>
-    <span id="verBadge" style="font-size:10px;color:rgba(255,255,255,.6);cursor:pointer;margin-left:6px;flex-shrink:0" title="点击检查更新">v4</span>
-  </div>
-  <div class="hdr-acts">
-    <button class="hdr-btn" onclick="showHelpModal()">❓</button>
-    <button class="hdr-btn" id="btnCheck" onclick="checkUnfilled()" title="未填写项检查">🔍</button>
-    <button class="hdr-btn" onclick="exportWord()" style="background:rgba(13,148,136,.7)">📄 报告</button>
-    <button class="hdr-btn" onclick="exportXlsx()">📥 Excel</button>
-    <div class="hdr-menu">
-      <button class="hdr-btn" id="btnMore" style="padding:6px 8px">⋯</button>
-      <div class="hdr-menu-list" id="hdrMenu">
-        <button class="hdr-menu-item" onclick="openCosConfig();closeHdrMenu()"><span class="mi">☁️</span>云备份设置</button>
-        <button class="hdr-menu-item" onclick="document.getElementById('verBadge').click();closeHdrMenu()"><span class="mi">🔄</span>检查更新</button>
-        <button class="hdr-menu-item" onclick="exportPhotos();closeHdrMenu()"><span class="mi">🖼️</span>导出照片备份</button>
-        <button class="hdr-menu-item" onclick="exportJSON();closeHdrMenu()"><span class="mi">💾</span>导出数据(JSON)</button>
-        <button class="hdr-menu-item" onclick="importJSON();closeHdrMenu()"><span class="mi">📂</span>导入数据(JSON)</button>
-        <button class="hdr-menu-item" onclick="clearAll();closeHdrMenu()" style="color:var(--err)"><span class="mi">🗑️</span>清空数据</button>
-      </div>
-    </div>
+<div style="display:flex;align-items:center;min-width:0;flex:1">
+  <button class="bk-btn" id="bkBtn" style="display:none" onclick="goBack()">&#8249;</button>
+  <h1 id="hdrT">机房健康度评估</h1>
+</div>
+<div class="hdr-acts">
+  <button class="hdr-btn" id="btnCheck" onclick="checkUnfilled()" title="未填写项检查">🔍</button>
+  <button class="hdr-btn" id="btnMore" style="padding:6px 8px" title="更多">⋮</button>
+  <div class="hdr-menu-list" id="hdrMenu">
+    <button class="hdr-menu-item" onclick="exportWord();closeHdrMenu()"><span class="mi">📄</span>导出报告</button>
+    <button class="hdr-menu-item" onclick="exportXlsx();closeHdrMenu()"><span class="mi">📥</span>导出Excel</button>
+    <div class="hdr-menu-divider"></div>
+    <button class="hdr-menu-item" onclick="showHelpModal();closeHdrMenu()"><span class="mi">❓</span>使用说明</button>
+    <button class="hdr-menu-item" onclick="checkUpdate();closeHdrMenu()"><span class="mi">🔄</span>v4 (检查更新)</button>
+    <div class="hdr-menu-divider"></div>
+    <button class="hdr-menu-item" onclick="openCosConfig();closeHdrMenu()"><span class="mi">☁️</span>云备份设置</button>
+    <button class="hdr-menu-item" onclick="exportPhotos();closeHdrMenu()"><span class="mi">🖼️</span>导出照片备份</button>
+    <button class="hdr-menu-item" onclick="exportJSON();closeHdrMenu()"><span class="mi">💾</span>导出数据(JSON)</button>
+    <button class="hdr-menu-item" onclick="importJSON();closeHdrMenu()"><span class="mi">📂</span>导入数据(JSON)</button>
+    <div class="hdr-menu-divider"></div>
+    <button class="hdr-menu-item" onclick="clearAll();closeHdrMenu()" style="color:var(--err)"><span class="mi">🗑️</span>清空数据</button>
   </div>
 </div>
-<div class="sav" id="savInd">✓ 已保存</div>
+</div><div class="sav" id="savInd">✓ 已保存</div>
 <div id="pgOv" class="ov">
   <div class="ov-tot"><h2>整体完成度</h2><div class="pct" id="totPct">0%</div><div class="det" id="totDet">0 / 0 项已填写</div></div>
   <div id="ovCards"></div>
@@ -938,7 +937,7 @@ function exportWord(){
   showToast('📄 报告已导出');
 }
 
-document.getElementById('verBadge').addEventListener('click',function(){
+function checkUpdate(){
   showToast('🔄 正在检查更新...');
   if('serviceWorker' in navigator){
     navigator.serviceWorker.getRegistration().then(function(reg){
@@ -956,7 +955,7 @@ document.getElementById('verBadge').addEventListener('click',function(){
       }else{location.reload();}
     });
   }else{location.reload();}
-});
+}
 
 // === Feature 1: Unfilled item check ===
 function checkUnfilled(){
