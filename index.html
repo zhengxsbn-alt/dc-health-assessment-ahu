@@ -1363,23 +1363,20 @@ function adjustFabPosition(){
     var vv=window.visualViewport;
     var kbH=window.innerHeight-vv.height;
     if(kbH>60){
-      fab.style.top=(vv.height+vv.offsetTop-70)+'px';
-      fab.style.bottom='auto';
-    }else{
+      fab.style.bottom=(kbH+10)+'px';
       fab.style.top='';
+    }else{
       fab.style.bottom='80px';
+      fab.style.top='';
     }
   }else{
-    fab.style.top='';
     fab.style.bottom='80px';
+    fab.style.top='';
   }
 }
 if(window.visualViewport){
   window.visualViewport.addEventListener('resize',adjustFabPosition);
-  window.visualViewport.addEventListener('scroll',adjustFabPosition);
 }
-window.addEventListener('scroll',adjustFabPosition);
-window.addEventListener('resize',adjustFabPosition);
 document.addEventListener('focusin',function(e){
   var t=e.target;
   if(t&&t.id==='fabVoice')return;
@@ -1451,7 +1448,7 @@ updateVoiceQuotaDisplay();
   </div>
 </div>
 <input type="file" id="jsonFileInput" accept=".json" style="display:none">
-<button class="fab-voice" id="fabVoice">🎤<span class="fab-quota" id="fabQuota">500</span></button>
+<button class="fab-voice" id="fabVoice" tabindex="-1">🎤<span class="fab-quota" id="fabQuota">500</span></button>
 <div class="cos-modal-overlay" id="helpModal">
   <div class="cos-modal-box" style="max-height:80vh;overflow-y:auto;text-align:left;line-height:1.7;font-size:13px;max-width:340px">
     <h4 style="text-align:center;margin-bottom:12px">📖 AHU健康度评估使用说明</h4>
