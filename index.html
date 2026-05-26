@@ -334,23 +334,32 @@ var curTab='overview',curCat=null,sf='all';
 var d2f=new Set(),d3f=new Set(),expC=new Set();
 var phTgt=null,svTm=null;
 
+function stripPhotos(items){var c={};for(var k in items){if(items.hasOwnProperty(k)){c[k]={};for(var f in items[k]){if(f!=='photos')c[k][f]=items[k][f]}}}return c}
 function ld(){
   var raw=localStorage.getItem(LSK);
   var parsed=raw?JSON.parse(raw):{};
   // Clean up old photo data from localStorage (now in IndexedDB)
-  if(parsed.photos&&Object.keys(parsed.photos).length>0){
-    delete parsed.photos;
-    try{localStorage.setItem(LSK,JSON.stringify({info:parsed.info||{},items:parsed.items||{}}))}catch(e){}
-  }
+  var dirty=false;
+  if(parsed.photos&&Object.keys(parsed.photos).length>0){delete parsed.photos;dirty=true}
+  // Clean nested photos inside items (legacy data)
+  if(parsed.items){for(var k in parsed.items){if(parsed.items[k]&&parsed.items[k].photos){delete parsed.items[k].photos;dirty=true}}}
+  if(dirty){try{localStorage.setItem(LSK,JSON.stringify({info:parsed.info||{},items:stripPhotos(parsed.items||{})}))}catch(e){}}
   return{info:parsed.info||{},items:parsed.items||{},photos:{}};
 }
-function sv(){try{localStorage.setItem(LSK,JSON.stringify({info:D.info,items:D.items}))}catch(e){migrateCleanLS();try{localStorage.setItem(LSK,JSON.stringify({info:D.info,items:D.items}))}catch(e2){showToast('❌ 存储空间不足')}}shSv()}
+function sv(){
+  var toSave={info:D.info,items:stripPhotos(D.items)};
+  try{localStorage.setItem(LSK,JSON.stringify(toSave))}catch(e){migrateCleanLS();try{localStorage.setItem(LSK,JSON.stringify(toSave))}catch(e2){showToast('❌ 存储空间不足')}}
+  shSv();
+}
 function migrateCleanLS(){
   try{
     var raw=localStorage.getItem(LSK);
     if(!raw)return;
     var d=JSON.parse(raw);
-    if(d.photos){delete d.photos;localStorage.setItem(LSK,JSON.stringify({info:d.info||{},items:d.items||{}}));}
+    var dirty=false;
+    if(d.photos){delete d.photos;dirty=true}
+    if(d.items){for(var k in d.items){if(d.items[k]&&d.items[k].photos){delete d.items[k].photos;dirty=true}}}
+    if(dirty){localStorage.setItem(LSK,JSON.stringify({info:d.info||{},items:stripPhotos(d.items||{})}));}
   }catch(e){}
 }
 function shSv(){var e=document.getElementById('savInd');e.classList.add('on');clearTimeout(svTm);svTm=setTimeout(function(){e.classList.remove('on')},1500)}
@@ -586,14 +595,12 @@ function onPhoto(e){
     var it=gci(id.split('_')[0])[parseInt(id.split('_')[1])];
     cosAutoUpload(du,cosBuildPath(cn,it?it.dim2:'',it?it.content:'',idx),id+'_'+idx);
     if(!D.items[id])D.items[id]={};
-    D.items[id].photos=D.photos[id];
     asv();renderItems();
   });
 }
 function rmPh(ck,i,pi){
   var id=iid(ck,i);
   if(D.photos[id]){D.photos[id].splice(pi,1);if(!D.photos[id].length)delete D.photos[id]}
-  if(D.items[id])D.items[id].photos=D.photos[id]||[];
   openPhotoDB(function(db){
     if(!db){asv();renderItems();return;}
     var tx=db.transaction('photos','readwrite');
