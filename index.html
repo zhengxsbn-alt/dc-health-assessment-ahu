@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>AHU健康度评估</title>
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest-ahu.json">
 <meta name="theme-color" content="#16A34A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="icon-ahu-192.png">
 <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 :root{--pri:#16A34A;--pri-l:#22C55E;--pri-d:#15803D;--pri-bg:#F0FDF4;--ok:#10B981;--warn:#F59E0B;--err:#EF4444;--g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;--g300:#D1D5DB;--g400:#9CA3AF;--g500:#6B7280;--g600:#4B5563;--g700:#374151;--g800:#1F2937;--r:10px;--rs:6px;--sh:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);--shm:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06)}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -156,6 +157,13 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
 .cos-status{font-size:11px;color:var(--g500);margin-top:4px}
 .check-item:active{background:#F0FFF0}
 #cosToast.show{opacity:1!important}
+.fab-voice{position:fixed;right:16px;width:50px;height:50px;border-radius:50%;border:none;background:linear-gradient(135deg,#F97316,#EA580C);color:#FFF;font-size:24px;cursor:pointer;z-index:200;box-shadow:0 4px 14px rgba(249,115,22,.45);display:flex;align-items:center;justify-content:center;transition:bottom .15s}
+.fab-voice:active{transform:scale(.92)}
+.fab-voice.recording{background:linear-gradient(135deg,#EF4444,#DC2626);animation:fabPulse 1.2s infinite}
+.fab-voice .fab-quota{position:absolute;top:-6px;right:-6px;background:#1F2937;color:#FFF;font-size:9px;padding:1px 4px;border-radius:8px;line-height:14px;white-space:nowrap;pointer-events:none}
+@keyframes fabPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}50%{box-shadow:0 0 0 10px rgba(239,68,68,0)}}
+.voice-target{border:2px solid #F97316 !important;background:#FFF7ED !important;box-shadow:0 0 0 3px rgba(249,115,22,.25);animation:voiceTargetPulse 1.5s infinite}
+@keyframes voiceTargetPulse{0%,100%{box-shadow:0 0 0 3px rgba(249,115,22,.25)}50%{box-shadow:0 0 0 6px rgba(249,115,22,.1)}}
 </style>
 </head>
 <body>
@@ -166,6 +174,7 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
     <span id="verBadge" style="font-size:10px;color:rgba(255,255,255,.6);cursor:pointer;margin-left:6px;flex-shrink:0" title="点击检查更新">v4</span>
   </div>
   <div class="hdr-acts">
+    <button class="hdr-btn" onclick="showHelpModal()">❓</button>
     <button class="hdr-btn" id="btnCheck" onclick="checkUnfilled()" title="未填写项检查">🔍</button>
     <button class="hdr-btn" onclick="exportWord()" style="background:rgba(13,148,136,.7)">📄 报告</button>
     <button class="hdr-btn" onclick="exportXlsx()">📥 Excel</button>
@@ -174,6 +183,7 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
       <div class="hdr-menu-list" id="hdrMenu">
         <button class="hdr-menu-item" onclick="openCosConfig();closeHdrMenu()"><span class="mi">☁️</span>云备份设置</button>
         <button class="hdr-menu-item" onclick="document.getElementById('verBadge').click();closeHdrMenu()"><span class="mi">🔄</span>检查更新</button>
+        <button class="hdr-menu-item" onclick="exportPhotos();closeHdrMenu()"><span class="mi">🖼️</span>导出照片备份</button>
         <button class="hdr-menu-item" onclick="exportJSON();closeHdrMenu()"><span class="mi">💾</span>导出数据(JSON)</button>
         <button class="hdr-menu-item" onclick="importJSON();closeHdrMenu()"><span class="mi">📂</span>导入数据(JSON)</button>
         <button class="hdr-menu-item" onclick="clearAll();closeHdrMenu()" style="color:var(--err)"><span class="mi">🗑️</span>清空数据</button>
@@ -1095,7 +1105,7 @@ document.getElementById('btnMore').addEventListener('click',function(e){
 document.addEventListener('click',function(){closeHdrMenu()});
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').then(function(reg){
+  navigator.serviceWorker.register('sw-ahu.js').then(function(reg){
     console.log('SW registered:',reg.scope)
   }).catch(function(err){
     console.log('SW registration failed:',err)
@@ -1128,6 +1138,260 @@ document.getElementById('cosTestUpload').addEventListener('click',function(){
     else showToast('✅ 连接成功! 云备份可用');
   });
 });
+
+// === Help Modal ===
+function showHelpModal(){document.getElementById('helpModal').classList.add('show')}
+function closeHelpModal(){document.getElementById('helpModal').classList.remove('show')}
+
+// === Photo ZIP Export ===
+function exportPhotos(){
+  if(!D.photos||!Object.keys(D.photos).length){showToast('⚠️ 没有照片可导出');return;}
+  showToast('🖼️ 正在打包照片...');
+  var zip=new JSZip();
+  var count=0;
+  CATS.forEach(function(c){
+    var its=gci(c.k);
+    its.forEach(function(it,i){
+      var id=iid(c.k,i);
+      var phs=D.photos[id]||[];
+      phs.forEach(function(p,pi){
+        if(p&&p.indexOf('data:image')===0){
+          var mtype=p.match(/^data:(image\/\w+);base64,/);
+          var ext=mtype?mtype[1].split('/')[1]:'jpeg';
+          if(ext==='jpeg')ext='jpg';
+          var d2=(it.dim2||'').replace(/^\d+-/,'');
+          var folder=c.n+(d2?'_'+d2:'');
+          zip.folder(folder).file('照片_'+(i+1)+'_'+(pi+1)+'.'+ext,p.split(',')[1],{base64:true});
+          count++;
+        }
+      });
+    });
+  });
+  if(!count){showToast('⚠️ 没有照片可导出');return;}
+  zip.generateAsync({type:'blob'}).then(function(blob){
+    var name=(D.info.dc_name||'未命名')+'AHU健康度评估照片备份.zip';
+    downloadBlob(blob,name);
+    showToast('✅ 照片备份已导出('+count+'张)');
+  });
+}
+
+// === iFlytek Voice ASR Engine ===
+var XF_APPID='71622ada';
+var XF_APIKEY='44358948548133899b1e3cd3ffc62dd0';
+var XF_APISEC='ZjU3MmExZGNhYjdkZmQwMDcyMjU0MDc3';
+
+function getVoiceQuota(){
+  var q=localStorage.getItem('xf_quota');
+  if(!q)return{date:'',used:0};
+  try{var d=JSON.parse(q);if(d.date!==new Date().toISOString().slice(0,10)){d.date=new Date().toISOString().slice(0,10);d.used=0;localStorage.setItem('xf_quota',JSON.stringify(d));}return d;}catch(e){return{date:'',used:0};}
+}
+function incVoiceQuota(){
+  var d=getVoiceQuota();d.used++;d.date=new Date().toISOString().slice(0,10);localStorage.setItem('xf_quota',JSON.stringify(d));updateVoiceQuotaDisplay();
+}
+function updateVoiceQuotaDisplay(){
+  var q=getVoiceQuota();var left=500-q.used;
+  var badge=document.getElementById('fabQuota');
+  if(badge)badge.textContent=left;
+  var fab=document.getElementById('fabVoice');
+  if(fab){
+    if(left<=0)fab.style.opacity='0.5';
+    else if(left<=50)fab.style.background='linear-gradient(135deg,#F59E0B,#D97706)';
+    else fab.style.opacity='';
+  }
+}
+
+function xfAuthUrl(){
+  var d=new Date().toUTCString();
+  var sig='host: iat-api.xfyun.cn\ndate: '+d+'\nGET /v2/iat HTTP/1.1';
+  var enc=CryptoJS.HmacSHA256(sig,XF_APISEC);
+  var auth=CryptoJS.enc.Base64.stringify(enc);
+  var tok='api_key="'+XF_APIKEY+'", algorithm="hmac-sha256", headers="host date request-line", signature="'+auth+'"';
+  return 'wss://iat-api.xfyun.cn/v2/iat?authorization='+btoa(tok)+'&date='+encodeURIComponent(d)+'&host=iat-api.xfyun.cn';
+}
+
+var xfWs=null,xfAudioCtx=null,xfProcessor=null,xfTargetInput=null,xfStream=null,xfCurSent='',xfFixedText='',xfBeforeText='',xfAfterText='',xfInsertPos=0;
+
+function startXFVoice(targetEl){
+  var q=getVoiceQuota();
+  if(q.used>=500){showToast('⚠️ 今日讯飞语音额度已用完(500次)，已切换浏览器语音');startBrowserVoice(targetEl);return;}
+  if(!targetEl){return;}
+  xfTargetInput=targetEl;
+  xfCurSent='';xfFixedText='';
+  var isNum=targetEl.type==='number';
+  if(isNum){
+    xfBeforeText='';xfAfterText='';
+  }else{
+    xfInsertPos=targetEl.selectionStart||targetEl.value.length;
+    xfBeforeText=targetEl.value.substring(0,xfInsertPos);
+    xfAfterText=targetEl.value.substring(targetEl.selectionEnd||xfInsertPos);
+  }
+  navigator.mediaDevices.getUserMedia({audio:{channelCount:1,sampleRate:16000,echoCancellation:true,noiseSuppression:true}}).then(function(stream){
+    xfStream=stream;
+    xfAudioCtx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:16000});
+    var src=xfAudioCtx.createMediaStreamSource(stream);
+    xfProcessor=xfAudioCtx.createScriptProcessor(4096,1,1);
+    src.connect(xfProcessor);
+    xfProcessor.connect(xfAudioCtx.destination);
+    try{xfWs=new WebSocket(xfAuthUrl());}catch(e){showToast('❌ 语音连接失败');stopXFVoice();return;}
+    xfWs.onopen=function(){
+      var frame={common:{app_id:XF_APPID},business:{language:'zh_cn',domain:'iat',accent:'mandarin',vad_eos:8000,dwa:'wpgs'},data:{status:0,format:'audio/L16;rate=16000',encoding:'raw'}};
+      xfWs.send(JSON.stringify(frame));
+      var fab=document.getElementById('fabVoice');
+      if(fab)fab.classList.add('recording');
+      xfTargetInput.classList.add('voice-target');
+      showToast('🎤 录音中...');
+    };
+    xfWs.onmessage=function(e){
+      try{
+        var r=JSON.parse(e.data);
+        if(r.code!==0){showToast('❌ 语音识别错误:'+r.message);stopXFVoice();return;}
+        var data=r.data&&r.data.result;
+        if(data){
+          var ws=data.ws;
+          if(ws){
+            var txt='';
+            ws.forEach(function(w){w.cw.forEach(function(c){txt+=c.w;});});
+            if(data.pgs==='apd'){
+              xfFixedText+=xfCurSent;
+              xfCurSent=txt;
+            }else if(data.pgs==='rpl'){
+              xfCurSent=txt;
+            }else{
+              xfCurSent=txt;
+            }
+            xfTargetInput.value=xfBeforeText+xfFixedText+xfCurSent+xfAfterText;
+            if(xfTargetInput.type==='number'){
+              var num=xfFixedText+xfCurSent;
+              var parsed=parseFloat(num.replace(/[^\d.]/g,''));
+              if(!isNaN(parsed))xfTargetInput.value=parsed;
+            }
+            xfTargetInput.dispatchEvent(new Event('input',{bubbles:true}));
+          }
+          if(data.status===2)stopXFVoice();
+        }
+      }catch(err){}
+    };
+    xfWs.onerror=function(){showToast('❌ 语音连接中断');stopXFVoice();};
+    xfWs.onclose=function(){};
+    xfProcessor.onaudioprocess=function(e){
+      if(xfWs&&xfWs.readyState===1){
+        var pcm=e.inputBuffer.getChannelData(0);
+        var int16=new Int16Array(pcm.length);
+        for(var i=0;i<pcm.length;i++){var s=Math.max(-1,Math.min(1,pcm[i]));int16[i]=s<0?s*0x8000:s*0x7FFF;}
+        var b64=arrayBufferToBase64(int16.buffer);
+        xfWs.send(JSON.stringify({data:{status:1,format:'audio/L16;rate=16000',encoding:'raw',audio:b64}}));
+      }
+    };
+  }).catch(function(e){showToast('❌ 无法访问麦克风');});
+}
+
+function stopXFVoice(){
+  if(xfWs&&xfWs.readyState===1){
+    xfWs.send(JSON.stringify({data:{status:2,format:'audio/L16;rate=16000',encoding:'raw',audio:''}}));
+  }
+  if(xfProcessor)xfProcessor.disconnect();
+  if(xfAudioCtx)xfAudioCtx.close();
+  if(xfStream)xfStream.getTracks().forEach(function(t){t.stop();});
+  xfWs=null;xfProcessor=null;xfAudioCtx=null;xfStream=null;
+  var fab=document.getElementById('fabVoice');
+  if(fab)fab.classList.remove('recording');
+  if(xfTargetInput)xfTargetInput.classList.remove('voice-target');
+  incVoiceQuota();
+  showToast('✅ 录音结束');
+}
+
+function arrayBufferToBase64(buf){
+  var bin='';
+  var bytes=new Uint8Array(buf);
+  for(var i=0;i<bytes.byteLength;i++)bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+function startBrowserVoice(targetEl){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){showToast('❌ 当前浏览器不支持语音输入');return;}
+  var rec=new SR();
+  rec.lang='zh-CN';rec.continuous=false;rec.interimResults=false;
+  var pos=targetEl.selectionStart||targetEl.value.length;
+  var before=targetEl.value.substring(0,pos);
+  var after=targetEl.value.substring(targetEl.selectionEnd||pos);
+  rec.onresult=function(e){
+    var t=e.results[0][0].transcript;
+    if(targetEl){targetEl.value=before+t+after;targetEl.dispatchEvent(new Event('input',{bubbles:true}));}
+  };
+  rec.onerror=function(){showToast('❌ 语音识别出错');};
+  rec.onend=function(){};
+  rec.start();
+  showToast('🎤 浏览器语音录音中...');
+}
+
+// Track last focused input for voice target
+var xfLastFocused=null;
+document.addEventListener('focusin',function(e){
+  if(e.target&&(e.target.tagName==='INPUT'&&(e.target.type==='text'||e.target.type==='number')||e.target.tagName==='TEXTAREA')){
+    if(!e.target.readOnly)xfLastFocused=e.target;
+  }
+});
+
+function toggleFabVoice(){
+  if(document.getElementById('fabVoice').classList.contains('recording')){stopXFVoice();}
+  else{
+    var target=xfLastFocused;
+    if(!target){showToast('请先点击要输入的文本框');return;}
+    startXFVoice(target);
+  }
+}
+
+// FAB Voice Button click
+document.getElementById('fabVoice').addEventListener('click',toggleFabVoice);
+
+// FAB keyboard avoidance using visualViewport
+var fabPollTimer=null;
+function startFabPoll(){
+  if(fabPollTimer)return;
+  adjustFabPosition();
+  fabPollTimer=setInterval(adjustFabPosition,200);
+}
+function stopFabPoll(){
+  if(fabPollTimer){clearInterval(fabPollTimer);fabPollTimer=null;}
+  adjustFabPosition();
+}
+function adjustFabPosition(){
+  var fab=document.getElementById('fabVoice');
+  if(!fab)return;
+  if(window.visualViewport){
+    var vv=window.visualViewport;
+    var kbH=window.innerHeight-vv.height;
+    if(kbH>60){
+      fab.style.top=(vv.height+vv.offsetTop-70)+'px';
+      fab.style.bottom='auto';
+    }else{
+      fab.style.top=(window.innerHeight-130)+'px';
+      fab.style.bottom='auto';
+    }
+  }else{
+    fab.style.top=(window.innerHeight-130)+'px';
+    fab.style.bottom='auto';
+  }
+}
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',adjustFabPosition);
+  window.visualViewport.addEventListener('scroll',adjustFabPosition);
+}
+window.addEventListener('scroll',adjustFabPosition);
+window.addEventListener('resize',adjustFabPosition);
+document.addEventListener('focusin',function(e){
+  var t=e.target;
+  if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA')&&!t.readOnly){
+    setTimeout(startFabPoll,150);
+  }
+});
+document.addEventListener('focusout',function(){
+  setTimeout(stopFabPoll,150);
+});
+
+// Init voice quota display
+updateVoiceQuotaDisplay();
 </script>
 <div id="toast"></div>
 
@@ -1186,5 +1450,43 @@ document.getElementById('cosTestUpload').addEventListener('click',function(){
   </div>
 </div>
 <input type="file" id="jsonFileInput" accept=".json" style="display:none">
+<button class="fab-voice" id="fabVoice">🎤<span class="fab-quota" id="fabQuota">500</span></button>
+<div class="cos-modal-overlay" id="helpModal">
+  <div class="cos-modal-box" style="max-height:80vh;overflow-y:auto;text-align:left;line-height:1.7;font-size:13px;max-width:340px">
+    <h4 style="text-align:center;margin-bottom:12px">📖 AHU健康度评估使用说明</h4>
+    <div style="background:var(--pri-bg);border-radius:8px;padding:10px;margin-bottom:10px;border:1px solid var(--pri)">
+      <b>📱 AHU专项评估概述</b><br>
+      AHU（空调机组）健康度评估工具，支持离线使用，数据保存在本地。
+    </div>
+    <b>📊 各评分维度说明</b><br>
+    ⚡ <b>配电系统可靠性</b> — 中压配电、低压配电、UPS等评估<br>
+    ❄️ <b>暖通系统可靠性</b> — 冷源、冷冻水系统、AHU末端等评估<br>
+    🔧 <b>运维体系</b> — 运维制度与流程评估<br>
+    📝 <b>运维实施</b> — 运维执行情况评估<br>
+    🌱 <b>节能管理</b> — 节能措施与效果评估<br><br>
+    <b>🔍 未填写项检查</b><br>
+    • 点击标题栏「🔍」扫描未填写项<br>
+    • 点击条目自动跳转并高亮<br><br>
+    <b>🎤 语音输入</b><br>
+    1. 点击输入框获得焦点<br>
+    2. 点击右下角橙色🎤按钮开始说话<br>
+    3. 再次点击结束，文字插入光标位置<br>
+    • 数字输入框自动将语音转数字<br>
+    • 按钮右上角显示当日剩余次数（500次/天）<br>
+    • 配额用完自动降级为浏览器语音<br><br>
+    <b>🖼️ 照片备份导出</b><br>
+    • 菜单中「🖼️ 导出照片备份」将所有照片打包为ZIP下载<br><br>
+    <b>💾 JSON导出导入</b><br>
+    • 💾 <b>导出JSON</b> — 完整数据导出<br>
+    • 📂 <b>导入JSON</b> — 恢复数据（覆盖当前）<br><br>
+    <b>☁️ 云备份</b><br>
+    配置腾讯云COS密钥后，拍照自动上传云端。<br><br>
+    <b>📱 安装为APP</b><br>
+    浏览器中选「添加到主屏幕」，全屏运行无地址栏。
+    <div style="text-align:center;margin-top:16px">
+      <button class="btn btn-primary" onclick="closeHelpModal()" style="min-width:120px;background:var(--pri);color:#FFF;border:none;padding:8px 20px;border-radius:8px;font-size:14px;cursor:pointer">知道了</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
