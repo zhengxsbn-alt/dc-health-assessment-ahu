@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>AHU健康度评估</title>
-<link rel="manifest" href="manifest-ahu.json">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#16A34A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -154,6 +154,7 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
 .cos-modal-box .btn-primary{background:var(--pri);color:#FFF}
 .cos-modal-box .btn-outline{background:#FFF;color:var(--g600);border:1px solid var(--g300)}
 .cos-status{font-size:11px;color:var(--g500);margin-top:4px}
+.check-item:active{background:#F0FFF0}
 #cosToast.show{opacity:1!important}
 </style>
 </head>
@@ -165,6 +166,7 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
     <span id="verBadge" style="font-size:10px;color:rgba(255,255,255,.6);cursor:pointer;margin-left:6px;flex-shrink:0" title="点击检查更新">v4</span>
   </div>
   <div class="hdr-acts">
+    <button class="hdr-btn" id="btnCheck" onclick="checkUnfilled()" title="未填写项检查">🔍</button>
     <button class="hdr-btn" onclick="exportWord()" style="background:rgba(13,148,136,.7)">📄 报告</button>
     <button class="hdr-btn" onclick="exportXlsx()">📥 Excel</button>
     <div class="hdr-menu">
@@ -172,6 +174,8 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
       <div class="hdr-menu-list" id="hdrMenu">
         <button class="hdr-menu-item" onclick="openCosConfig();closeHdrMenu()"><span class="mi">☁️</span>云备份设置</button>
         <button class="hdr-menu-item" onclick="document.getElementById('verBadge').click();closeHdrMenu()"><span class="mi">🔄</span>检查更新</button>
+        <button class="hdr-menu-item" onclick="exportJSON();closeHdrMenu()"><span class="mi">💾</span>导出数据(JSON)</button>
+        <button class="hdr-menu-item" onclick="importJSON();closeHdrMenu()"><span class="mi">📂</span>导入数据(JSON)</button>
         <button class="hdr-menu-item" onclick="clearAll();closeHdrMenu()" style="color:var(--err)"><span class="mi">🗑️</span>清空数据</button>
       </div>
     </div>
@@ -944,7 +948,143 @@ document.getElementById('verBadge').addEventListener('click',function(){
   }else{location.reload();}
 });
 
+// === Feature 1: Unfilled item check ===
+function checkUnfilled(){
+  var list=[];
+  CATS.forEach(function(c){
+    var its=gci(c.k);
+    its.forEach(function(it,i){
+      var id=iid(c.k,i);
+      if(!isFill(id)){
+        list.push({cat:c.k,catName:c.ic+' '+c.n,id:id,label:it.content,dim2:it.dim2,dim3:it.dim3.trim().replace(/\n/g,''),idx:i});
+      }
+    });
+  });
+  showCheckResult(list);
+}
+
+function showCheckResult(list){
+  var el=document.getElementById('checkList');
+  var cnt=document.getElementById('checkCount');
+  if(!list.length){
+    el.innerHTML='<div style="text-align:center;padding:32px 0;color:var(--ok);font-size:15px">✅ 所有评估项已填写完毕！</div>';
+    cnt.textContent='';
+  }else{
+    cnt.textContent='共 '+list.length+' 项未填写';
+    var h='';
+    list.forEach(function(it){
+      h+='<div class="check-item" data-cat="'+it.cat+'" data-id="'+it.id+'" style="padding:10px 0;border-bottom:1px solid var(--g100);cursor:pointer">';
+      h+='<div style="font-size:12px;color:var(--pri);margin-bottom:2px">'+eH(it.catName)+'</div>';
+      h+='<div style="font-size:14px;color:var(--g700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eH(it.label)+'</div>';
+      h+='</div>';
+    });
+    el.innerHTML=h;
+    var items=el.querySelectorAll('.check-item');
+    items.forEach(function(item){
+      var sx,sy,moved;
+      item.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;moved=false},{passive:true});
+      item.addEventListener('touchmove',function(e){if(Math.abs(e.touches[0].clientX-sx)>8||Math.abs(e.touches[0].clientY-sy)>8)moved=true},{passive:true});
+      item.addEventListener('touchend',function(e){if(!moved)doJump(this.dataset.cat,this.dataset.id)},{passive:true});
+      item.addEventListener('click',function(){doJump(this.dataset.cat,this.dataset.id)});
+    });
+  }
+  document.getElementById('checkModal').style.display='flex';
+}
+
+function closeCheckModal(){
+  document.getElementById('checkModal').style.display='none';
+}
+
+function doJump(catKey,itemId){
+  closeCheckModal();
+  swTab(catKey);
+  setTimeout(function(){
+    if(!expC.has(itemId)){tgCard(itemId)}
+    var target=document.getElementById('c_'+itemId);
+    if(target){
+      var rect=target.getBoundingClientRect();
+      var scrollTop=window.pageYOffset||document.documentElement.scrollTop;
+      window.scrollTo(0,scrollTop+rect.top-60);
+      target.style.transition='box-shadow .3s';
+      target.style.boxShadow='0 0 0 3px var(--pri), 0 4px 12px rgba(22,163,74,.2)';
+      setTimeout(function(){target.style.boxShadow='';},2000);
+    }
+  },150);
+}
+
+// === Feature 2: JSON export/import ===
+function downloadBlob(blob,filename){
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url)},100);
+}
+
+function exportJSON(){
+  var data={info:D.info,items:D.items,photos:D.photos||{}};
+  var json=JSON.stringify(data);
+  var blob=new Blob([json],{type:'application/json'});
+  var d=new Date();
+  var ds=d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2);
+  var name=D.info.dc_name||D.info.name||'未命名';
+  downloadBlob(blob,'健康度评估_'+name+'_'+ds+'.json');
+  showToast('💾 JSON已导出');
+}
+
+function importJSON(){
+  document.getElementById('jsonFileInput').click();
+}
+
+function handleJSONImport(evt){
+  var file=evt.target.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(!data||typeof data!=='object'||(!data.items&&!data.info)){
+        showToast('❌ 无效的JSON文件格式');
+        return;
+      }
+      showConfirm('📂 导入JSON数据','导入将覆盖当前所有评估数据，确定继续吗？',function(){
+        D.info=data.info||{};
+        D.items=data.items||{};
+        D.photos=data.photos||{};
+        sv();
+        expC=new Set();d2f=new Set();d3f=new Set();
+        renderOv();renderInfo();
+        if(curCat)renderCat(curCat);
+        showToast('✅ 数据导入成功');
+      });
+    }catch(err){
+      showToast('❌ JSON解析失败: '+err.message);
+    }
+  };
+  reader.readAsText(file);
+  evt.target.value='';
+}
+
+function showConfirm(title,msg,onOk){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  var okBtn=document.getElementById('confirmOk');
+  var newBtn=okBtn.cloneNode(true);
+  okBtn.parentNode.replaceChild(newBtn,okBtn);
+  newBtn.id='confirmOk';
+  newBtn.addEventListener('click',function(){
+    closeConfirmModal();
+  onOk();
+  });
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+function closeConfirmModal(){
+  document.getElementById('confirmModal').classList.remove('show');
+}
+
 function init(){renderOv();renderInfo()}
+document.getElementById('jsonFileInput').addEventListener('change',handleJSONImport);
 
 // Header menu toggle
 function closeHdrMenu(){document.getElementById('hdrMenu').classList.remove('show')}
@@ -955,7 +1095,7 @@ document.getElementById('btnMore').addEventListener('click',function(e){
 document.addEventListener('click',function(){closeHdrMenu()});
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw-ahu.js').then(function(reg){
+  navigator.serviceWorker.register('sw.js').then(function(reg){
     console.log('SW registered:',reg.scope)
   }).catch(function(err){
     console.log('SW registration failed:',err)
@@ -1021,5 +1161,30 @@ document.getElementById('cosTestUpload').addEventListener('click',function(){
     </div>
   </div>
 </div>
+<!-- Check unfilled modal -->
+<div id="checkModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:12px;max-width:380px;width:100%;max-height:80vh;display:flex;flex-direction:column">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between">
+      <h4 style="margin:0;font-size:16px">🔍 未填项检查</h4>
+      <button onclick="closeCheckModal()" style="border:none;background:none;font-size:20px;color:var(--g400);cursor:pointer;padding:4px">✕</button>
+    </div>
+    <div id="checkList" style="padding:12px 20px;overflow-y:auto;flex:1"></div>
+    <div style="padding:12px 20px;border-top:1px solid var(--g200);text-align:center">
+      <span id="checkCount" style="font-size:13px;color:var(--g500)"></span>
+    </div>
+  </div>
+</div>
+<!-- Confirm modal -->
+<div class="cos-modal-overlay" id="confirmModal">
+  <div class="cos-modal-box">
+    <h4 id="confirmTitle">确认</h4>
+    <p id="confirmMsg" style="font-size:14px;color:var(--g600);margin:8px 0 16px;text-align:center"></p>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="closeConfirmModal()">取消</button>
+      <button class="btn btn-primary" id="confirmOk">确定</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="jsonFileInput" accept=".json" style="display:none">
 </body>
 </html>
