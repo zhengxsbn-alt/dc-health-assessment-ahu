@@ -1358,6 +1358,7 @@ function stopFabPoll(){
 function adjustFabPosition(){
   var fab=document.getElementById('fabVoice');
   if(!fab)return;
+  if(fab.classList.contains('recording'))return;
   if(window.visualViewport){
     var vv=window.visualViewport;
     var kbH=window.innerHeight-vv.height;
@@ -1365,12 +1366,12 @@ function adjustFabPosition(){
       fab.style.top=(vv.height+vv.offsetTop-70)+'px';
       fab.style.bottom='auto';
     }else{
-      fab.style.top=(window.innerHeight-130)+'px';
-      fab.style.bottom='auto';
+      fab.style.top='';
+      fab.style.bottom='80px';
     }
   }else{
-    fab.style.top=(window.innerHeight-130)+'px';
-    fab.style.bottom='auto';
+    fab.style.top='';
+    fab.style.bottom='80px';
   }
 }
 if(window.visualViewport){
@@ -1381,6 +1382,7 @@ window.addEventListener('scroll',adjustFabPosition);
 window.addEventListener('resize',adjustFabPosition);
 document.addEventListener('focusin',function(e){
   var t=e.target;
+  if(t&&t.id==='fabVoice')return;
   if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA')&&!t.readOnly){
     setTimeout(startFabPoll,150);
   }
