@@ -570,7 +570,7 @@ function uploadToCOS(file,cosPath,cb){
   xhr.send(file);
 }
 
-function uploadToCOSWithACL(file, cosPath, acl, cb){
+function setCOSObjectACL(cosPath, acl, cb){
   var secretId=localStorage.getItem('cos_secret_id');
   var secretKey=localStorage.getItem('cos_secret_key');
   if(!secretId||!secretKey){cb&&cb(new Error('COS not configured'));return;}
@@ -582,26 +582,46 @@ function uploadToCOSWithACL(file, cosPath, acl, cb){
   var signKey=CryptoJS.HmacSHA1(keyTime,secretKey).toString(CryptoJS.enc.Hex);
   var httpMethod='put';
   var uriPathname='/'+cosPath;
-  var headersStr='host='+hostStr;
-  var headerList='host';
-  if(acl){headersStr+='\nx-cos-acl='+acl;headerList+=';x-cos-acl';}
-  var formatString=httpMethod+'\n'+uriPathname+'\n\n'+headersStr+'\n';
+  var headersStr='host='+hostStr+'\nx-cos-acl='+acl;
+  var headerList='host;x-cos-acl';
+  var formatString=httpMethod+'\n'+uriPathname+'\nacl=\n'+headersStr+'\n';
   var formatStringHash=CryptoJS.SHA1(formatString).toString();
   var stringToSign='sha1\n'+keyTime+'\n'+formatStringHash+'\n';
   var signature=CryptoJS.HmacSHA1(stringToSign,signKey).toString(CryptoJS.enc.Hex);
-  var auth='q-sign-algorithm=sha1&q-ak='+secretId+'&q-sign-time='+keyTime+'&q-key-time='+keyTime+'&q-header-list='+headerList+'&q-url-param-list=&q-signature='+signature;
-  var url='https://'+hostStr+'/'+cosPath.split('/').map(function(s){return encodeURIComponent(s);}).join('/');
+  var auth='q-sign-algorithm=sha1&q-ak='+secretId+'&q-sign-time='+keyTime+'&q-key-time='+keyTime+'&q-header-list='+headerList+'&q-url-param-list=acl&q-signature='+signature;
+  var url='https://'+hostStr+'/'+cosPath.split('/').map(function(s){return encodeURIComponent(s);}).join('/')+'?acl';
   var xhr=new XMLHttpRequest();
   xhr.open('PUT',url,true);
   xhr.setRequestHeader('Authorization',auth);
-  xhr.setRequestHeader('Content-Type',file.type||'application/json');
-  if(acl) xhr.setRequestHeader('x-cos-acl',acl);
+  xhr.setRequestHeader('x-cos-acl',acl);
   xhr.onload=function(){
-    if(xhr.status>=200&&xhr.status<300){cb&&cb(null,url);}
-    else{cb&&cb(new Error('COS upload failed: '+xhr.status));}
+    if(xhr.status>=200&&xhr.status<300){cb&&cb(null);}
+    else{cb&&cb(new Error('ACL设置失败('+xhr.status+')'));}
   };
-  xhr.onerror=function(){cb&&cb(new Error('COS network error'));};
-  xhr.send(file);
+  xhr.onerror=function(){cb&&cb(new Error('网络错误'));};
+  xhr.send('');
+}
+
+function uploadToCOSWithACL(file, cosPath, acl, cb){
+  // Step 1: upload file without ACL (avoids 403 from "Block Public Access")
+  uploadToCOS(file, cosPath, function(err, url){
+    if(err){cb&&cb(err);return;}
+    if(!acl){cb&&cb(null,url);return;}
+    // Step 2: try to set ACL separately
+    setCOSObjectACL(cosPath, acl, function(aclErr){
+      if(!aclErr){cb&&cb(null,url);return;}
+      // Step 3: ACL failed, check if file is publicly accessible anyway (e.g. via bucket policy)
+      var checkUrl=url+'?t='+Date.now();
+      var cxhr=new XMLHttpRequest();
+      cxhr.open('GET',checkUrl,true);
+      cxhr.onload=function(){
+        if(cxhr.status===200){cb&&cb(null,url);}
+        else{cb&&cb(new Error('文件已上传但无法公开访问。请到COS控制台关闭"阻止公共访问"：\n存储桶→安全管理→阻止公共访问→关闭，然后重新设置管理员密码'));}
+      };
+      cxhr.onerror=function(){cb&&cb(null,url);};
+      cxhr.send();
+    });
+  });
 }
 
 function cosAutoUpload(b64,cosPath,stateKey){
