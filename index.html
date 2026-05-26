@@ -250,6 +250,14 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
             <label>确认密码</label>
             <input type="password" id="authSetupPwd2" placeholder="再次输入密码">
           </div>
+          <div class="auth-fg" style="margin-top:10px">
+            <label>云存储密钥ID <span style="font-size:11px;color:var(--g400)">(必填)</span></label>
+            <input type="text" id="authCosSid" placeholder="COS SecretId" autocomplete="off">
+          </div>
+          <div class="auth-fg">
+            <label>云存储密钥Key <span style="font-size:11px;color:var(--g400)">(必填)</span></label>
+            <input type="password" id="authCosSkey" placeholder="COS SecretKey" autocomplete="off">
+          </div>
           <button class="auth-btn auth-btn-pri" onclick="AUTH.setupAdmin()">确认设置</button>
           <div class="auth-err" id="authSetupErr"></div>
         </div>
@@ -791,6 +799,12 @@ var AUTH={
     if(!pwd){this._showErr('authSetupErr','请设置密码');return;}
     if(pwd!==pwd2){this._showErr('authSetupErr','两次密码不一致');return;}
     if(pwd.length<4){this._showErr('authSetupErr','密码至少4位');return;}
+    // Save COS credentials from auth form
+    var sid=document.getElementById('authCosSid').value.trim();
+    var skey=document.getElementById('authCosSkey').value.trim();
+    if(!sid||!skey){this._showErr('authSetupErr','请填写云存储密钥');return;}
+    localStorage.setItem('cos_secret_id',sid);
+    localStorage.setItem('cos_secret_key',skey);
     var self=this;
     var permData={adminHash:this.hashPassword(pwd),approved:[],version:1};
     this.savePermissions(permData,function(err){
