@@ -1341,20 +1341,17 @@ function toggleFabVoice(){
   }
 }
 
-// FAB Voice Button click
-document.getElementById('fabVoice').addEventListener('click',toggleFabVoice);
+// FAB Voice Button - touchend+preventDefault to prevent keyboard dismiss
+var fabEl=document.getElementById('fabVoice');
+fabEl.addEventListener('touchend',function(e){
+  e.preventDefault();
+  toggleFabVoice();
+},{passive:false});
+fabEl.addEventListener('click',function(){
+  if(!('ontouchstart' in window))toggleFabVoice();
+});
 
-// FAB keyboard avoidance using visualViewport
-var fabPollTimer=null;
-function startFabPoll(){
-  if(fabPollTimer)return;
-  adjustFabPosition();
-  fabPollTimer=setInterval(adjustFabPosition,200);
-}
-function stopFabPoll(){
-  if(fabPollTimer){clearInterval(fabPollTimer);fabPollTimer=null;}
-  adjustFabPosition();
-}
+// FAB keyboard avoidance via visualViewport
 function adjustFabPosition(){
   var fab=document.getElementById('fabVoice');
   if(!fab)return;
@@ -1363,30 +1360,22 @@ function adjustFabPosition(){
     var vv=window.visualViewport;
     var kbH=window.innerHeight-vv.height;
     if(kbH>60){
-      fab.style.bottom=(kbH+10)+'px';
-      fab.style.top='';
+      fab.style.top=(vv.offsetTop+vv.height-60)+'px';
+      fab.style.bottom='auto';
     }else{
-      fab.style.bottom='80px';
       fab.style.top='';
+      fab.style.bottom='80px';
     }
   }else{
-    fab.style.bottom='80px';
     fab.style.top='';
+    fab.style.bottom='80px';
   }
 }
 if(window.visualViewport){
   window.visualViewport.addEventListener('resize',adjustFabPosition);
+  window.visualViewport.addEventListener('scroll',adjustFabPosition);
 }
-document.addEventListener('focusin',function(e){
-  var t=e.target;
-  if(t&&t.id==='fabVoice')return;
-  if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA')&&!t.readOnly){
-    setTimeout(startFabPoll,150);
-  }
-});
-document.addEventListener('focusout',function(){
-  setTimeout(stopFabPoll,150);
-});
+adjustFabPosition();
 
 // Init voice quota display
 updateVoiceQuotaDisplay();
