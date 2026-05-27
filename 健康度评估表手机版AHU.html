@@ -694,7 +694,7 @@ var AUTH={
   savePermissions:function(mutationFn,cb){
     var token=localStorage.getItem('gh_token');
     if(!token){cb&&cb(new Error('GitHub Token未配置'));return;}
-    var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_PATH;
+    var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_PATH+'?t='+Date.now();
     var gxhr=new XMLHttpRequest();
     gxhr.open('GET',apiUrl,true);
     gxhr.setRequestHeader('Authorization','token '+token);
@@ -883,7 +883,8 @@ var AUTH={
   revokeUser:function(name){
     var self=this;
     this.savePermissions(function(perm){
-      if(!perm||!perm.users)throw new Error('无用户数据');
+      if(!perm)return {adminHash:'',users:[],version:2};
+      if(!perm.users)perm.users=[];
       perm.users=perm.users.filter(function(u){return u.name!==name;});
       return perm;
     },function(err,data){
