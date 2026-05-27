@@ -853,14 +853,42 @@ var AUTH={
     if(pwd.length<4){this._showErr('activateErr','密码至少4位');return;}
     if(pwd!==pwd2){this._showErr('activateErr','两次密码不一致');return;}
     var self=this;
-    this.savePermissions('activateUser',{},{code:code,name:name,pwdHash:this.hashPassword(pwd)},function(err,data){
-      if(err){self._showErr('activateErr',err.message);return;}
-      self.permissions=data;
-      self.login('user',name);
-      localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
-      self._enterApp();
-      showToast('✅ 激活成功！可正常使用');
-    });
+    this._hideErr('activateErr');
+    fetch(this.GH_PAGES_URL+'?t='+Date.now())
+      .then(function(r){return r.json();})
+      .then(function(data){
+        if(data.users){
+          var localData=null;
+          try{localData=JSON.parse(localStorage.getItem(self.LS_PREFIX+'permissions'));}catch(e){}
+          if(localData&&localData.users){
+            localData.users.forEach(function(lu){
+              if(!data.users.some(function(cu){return cu.name===lu.name;})){
+                data.users.push(lu);
+              }
+            });
+          }
+        }
+        self.permissions=data;
+        localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(data));
+        self.savePermissions('activateUser',{},{code:code,name:name,pwdHash:self.hashPassword(pwd)},function(err,data2){
+          if(err){self._showErr('activateErr',err.message);return;}
+          self.permissions=data2;
+          self.login('user',name);
+          localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
+          self._enterApp();
+          showToast('✅ 激活成功！可正常使用');
+        });
+      })
+      .catch(function(){
+        self.savePermissions('activateUser',{},{code:code,name:name,pwdHash:self.hashPassword(pwd)},function(err,data2){
+          if(err){self._showErr('activateErr',err.message);return;}
+          self.permissions=data2;
+          self.login('user',name);
+          localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
+          self._enterApp();
+          showToast('✅ 激活成功！可正常使用');
+        });
+      });
   },
 
   toggleUser:function(name,active){
