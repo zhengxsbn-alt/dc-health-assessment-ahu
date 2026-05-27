@@ -679,6 +679,11 @@ var AUTH={
     gxhr.onload=function(){
       var sha=null;
       if(gxhr.status===200){try{sha=JSON.parse(gxhr.responseText).sha;}catch(e){}}
+      else if(gxhr.status!==404){
+        var msg='获取文件SHA失败('+gxhr.status+')';
+        try{var e2=JSON.parse(gxhr.responseText);msg=e2.message||msg;}catch(ex){}
+        cb&&cb(new Error(msg));return;
+      }
       var putData={message:'Update permissions',content:content,branch:'main'};
       if(sha)putData.sha=sha;
       var pxhr=new XMLHttpRequest();
