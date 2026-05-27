@@ -247,10 +247,6 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
             <label>确认密码</label>
             <input type="password" id="authSetupPwd2" placeholder="再次输入密码">
           </div>
-          <div class="auth-fg" style="margin-top:10px">
-            <label>GitHub Token <span style="font-size:11px;color:var(--g400)">(必填，需repo权限)</span></label>
-            <input type="password" id="authGhToken" placeholder="ghp_xxxx..." autocomplete="off">
-          </div>
           <button class="auth-btn auth-btn-pri" onclick="AUTH.setupAdmin()">确认设置</button>
           <div class="auth-err" id="authSetupErr"></div>
         </div>
@@ -317,16 +313,6 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
       <div class="admin-sec">
         <h4>👥 用户列表</h4>
         <div id="adminUserList"></div>
-      </div>
-      <div class="admin-sec">
-        <h4>🔑 GitHub Token配置</h4>
-        <div style="font-size:12px;color:var(--g500);margin-bottom:8px">创建/删除用户需要Token，首次设置后如更换设备需重新配置</div>
-        <div class="auth-fg">
-          <label>GitHub Token</label>
-          <input type="password" id="adminGhToken" placeholder="ghp_xxxx..." autocomplete="off">
-        </div>
-        <button class="auth-btn auth-btn-pri" onclick="AUTH.saveGhToken()">保存Token</button>
-        <div class="auth-err" id="adminGhTokenErr"></div>
       </div>
       <div class="admin-sec">
         <h4>🔑 修改管理员密码</h4>
@@ -650,11 +636,6 @@ var D=ld();
 
 // ============ AUTH Module ============
 var AUTH={
-  GH_REPO:'dc-health-assessment-ahu',
-  GH_PATH:'permission.json',
-  GH_PAGES_URL:'https://zhengxsbn-alt.github.io/dc-health-assessment-ahu/permission.json',
-  GH_OWNER:'zhengxsbn-alt',
-  WORKER_URL:'https://dc-ops-proxy.zhengxsbn.workers.dev',
   LS_PREFIX:'auth_ahu_',
   APP_TITLE:'AHU健康度评估',
   session:null,
@@ -662,63 +643,70 @@ var AUTH={
   permissions:null,
 
   fetchPermissions:function(cb){
-    var self=this;
-    var token=localStorage.getItem('gh_token');
-    var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_PATH+'?t='+Date.now();
-    var xhr=new XMLHttpRequest();
-    xhr.open('GET',apiUrl,true);
-    xhr.timeout=10000;
-    if(token)xhr.setRequestHeader('Authorization','token '+token);
-    xhr.setRequestHeader('Accept','application/vnd.github.v3+json');
-    xhr.onload=function(){
-      if(xhr.status===200){
-        try{
-          var resp=JSON.parse(xhr.responseText);
-          var content=resp.content.replace(/[\s\n]/g,'');
-          var perm=JSON.parse(decodeURIComponent(escape(atob(content))));
-          cb(perm);
-        }catch(e){cb(null);}
-      }else if(xhr.status===404){cb({notFound:true});}
-      else{self._fetchPermissionsCDN(cb);}
-    };
-    xhr.onerror=function(){self._fetchPermissionsCDN(cb);};
-    xhr.ontimeout=function(){self._fetchPermissionsCDN(cb);};
-    xhr.send();
-  },
-
-  _fetchPermissionsCDN:function(cb){
-    var url=this.GH_PAGES_URL+'?t='+Date.now();
-    var xhr=new XMLHttpRequest();
-    xhr.open('GET',url,true);
-    xhr.timeout=10000;
-    xhr.onload=function(){
-      if(xhr.status===200){
-        try{cb(JSON.parse(xhr.responseText));}catch(e){cb(null);}
-      }else if(xhr.status===404){cb({notFound:true});}
-      else{cb(null);}
-    };
-    xhr.onerror=function(){cb(null);};
-    xhr.ontimeout=function(){cb(null);};
-    xhr.send();
+    var stored=localStorage.getItem(this.LS_PREFIX+'permissions');
+    var permData=null;
+    if(stored){try{permData=JSON.parse(stored);}catch(e){}}
+    this.permissions=permData;
+    cb&&cb(permData);
   },
 
   savePermissions:function(action,credentials,params,cb){
-    var workerUrl=this.WORKER_URL;
-    if(!workerUrl){cb&&cb(new Error('服务未配置，请联系管理员部署Worker'));return;}
-    var body={repo:this.GH_REPO,action:action,credentials:credentials,params:params};
-    var xhr=new XMLHttpRequest();
-    xhr.open('POST',workerUrl,true);
-    xhr.setRequestHeader('Content-Type','application/json');
-    xhr.timeout=15000;
-    xhr.onload=function(){
-      var resp;
-      try{resp=JSON.parse(xhr.responseText);}catch(e){}
-      if(xhr.status>=200&&xhr.status<300&&resp&&resp.success){cb&&cb(null,resp.data);}
-      else{var msg=(resp&&resp.error)||'保存失败';cb&&cb(new Error(msg));}
-    };
-    xhr.onerror=function(){cb&&cb(new Error('网络错误'));};
-    xhr.ontimeout=function(){cb&&cb(new Error('请求超时'));};
-    xhr.send(JSON.stringify(body));
+    var permData=this.permissions;
+    var self=this;
+    try{
+      switch(action){
+        case 'setupAdmin':
+          if(permData)throw new Error('已初始化，请直接登录');
+          permData={adminHash:params.adminHash,users:[],version:2};
+          break;
+        case 'createUser':
+          if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
+            throw new Error('管理员密码错误');
+          if(!permData.users)permData.users=[];
+          if(permData.users.some(function(u){return u.name===params.name;}))throw new Error('用户名已存在');
+          permData.users.push({name:params.name,pwdHash:params.pwdHash,initialPwd:true,pwdSetAt:Date.now(),pwdExpireHours:params.pwdExpireHours||24,active:true});
+          break;
+        case 'revokeUser':
+          if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
+            throw new Error('管理员密码错误');
+          if(!permData.users)throw new Error('无用户数据');
+          permData.users=permData.users.filter(function(u){return u.name!==params.name;});
+          break;
+        case 'resetUserPwd':
+          if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
+            throw new Error('管理员密码错误');
+          if(!permData.users)throw new Error('无用户数据');
+          var user=permData.users.find(function(u){return u.name===params.name;});
+          if(!user)throw new Error('用户不存在');
+          user.pwdHash=params.pwdHash;
+          user.initialPwd=true;
+          user.pwdSetAt=Date.now();
+          user.active=true;
+          break;
+        case 'changeAdminPwd':
+          if(!permData||!self.verifyAdminPassword(credentials.oldAdminPwd,permData))
+            throw new Error('当前密码错误');
+          permData.adminHash=params.newAdminHash||params.adminHash;
+          break;
+        case 'forceChangePwd':
+          if(!permData||!permData.users)throw new Error('无法获取权限数据');
+          var u=permData.users.find(function(x){return x.name===credentials.userName;});
+          if(!u)throw new Error('用户不存在');
+          if(!self.verifyUserPassword(credentials.userPwd,u))
+            throw new Error('当前密码错误');
+          u.pwdHash=params.newPwdHash||params.pwdHash;
+          u.initialPwd=false;
+          u.active=true;
+          break;
+        default:
+          throw new Error('未知操作: '+action);
+      }
+      self.permissions=permData;
+      localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(permData));
+      cb&&cb(null,permData);
+    }catch(e){
+      cb&&cb(e);
+    }
   },
 
   verifyAdminPassword:function(password,perm){
@@ -835,20 +823,7 @@ var AUTH={
 
   openAdminPanel:function(){
     this._renderUserList();
-    var token=localStorage.getItem('gh_token');
-    document.getElementById('adminGhToken').value=token||'';
-    this._hideErr('adminGhTokenErr');
     document.getElementById('adminModal').classList.add('show');
-  },
-
-  saveGhToken:function(){
-    var token=document.getElementById('adminGhToken').value.trim();
-    var m=token.match(/ghp_[A-Za-z0-9]{36}/);
-    if(m)token=m[0];
-    if(!token||token.indexOf('ghp_')!==0){this._showErr('adminGhTokenErr','Token格式不正确，应以ghp_开头');return;}
-    localStorage.setItem('gh_token',token);
-    this._hideErr('adminGhTokenErr');
-    showToast('✅ GitHub Token已保存');
   },
 
   closeAdminPanel:function(){
