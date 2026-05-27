@@ -850,7 +850,7 @@ var AUTH={
 
   _syncToGitHub:function(cb){
     var token=localStorage.getItem(this.LS_PREFIX+'gh_token');
-    if(!token){cb&&cb(null);return;}
+    if(!token){showToast('⚠️ 未配置Token，数据仅保存在本地，其他设备无法同步');cb&&cb(null);return;}
     var self=this;
     var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_FILE;
     fetch(apiUrl,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}})
