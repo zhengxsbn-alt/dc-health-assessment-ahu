@@ -797,7 +797,7 @@ var AUTH={
 
   _syncToGitHub:function(cb){
     var token=localStorage.getItem(this.LS_PREFIX+'gh_token');
-    if(!token){cb&&cb(new Error('未配置GitHub Token，请先在权限管理中配置'));return;}
+    if(!token){cb&&cb(null);return;}
     var self=this;
     var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_FILE;
     fetch(apiUrl,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}})
