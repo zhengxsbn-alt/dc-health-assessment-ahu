@@ -791,6 +791,7 @@ var AUTH={
     if(!pwd){this._showErr('authAdminErr','请输入密码');return;}
     if(!this.permissions){this._showErr('authAdminErr','权限数据未加载');return;}
     if(this.verifyAdminPassword(pwd,this.permissions)){
+      this.adminPwd=pwd;
       this.login('admin','管理员');
       this._enterApp();
     }else{
