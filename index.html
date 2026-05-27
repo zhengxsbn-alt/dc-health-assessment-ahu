@@ -825,6 +825,7 @@ var AUTH={
           if(inv.usedByName&&inv.usedByName!==params.name)throw new Error('邀请码已被其他用户使用');
           if(!permData.users)permData.users=[];
           if(permData.users.some(function(u2){return u2.name===params.name;}))throw new Error('用户名已存在');
+          if(permData.revoked&&permData.revoked.some(function(r){return r===params.name;}))throw new Error('该用户名已被删除，不可重复使用');
           permData.users.push({name:params.name,displayName:inv.displayName||'',pwdHash:params.pwdHash,active:true,invitedBy:params.code,pwdSetAt:Date.now()});
           inv.usedByName=params.name;
           inv.usedAt=Date.now();
@@ -1050,6 +1051,17 @@ var AUTH={
     fetch(this.GH_PAGES_URL+'?t='+Date.now())
       .then(function(r){return r.json();})
       .then(function(data){
+        var localData=null;
+        try{localData=JSON.parse(localStorage.getItem(self.LS_PREFIX+'permissions'));}catch(e){}
+        if(localData&&localData.users&&data.users){
+          localData.users.forEach(function(lu){
+            if(!data.users.some(function(cu){return cu.name===lu.name;})){
+              if(!data.revoked||!data.revoked.some(function(r){return r===lu.name;})){
+                data.users.push(lu);
+              }
+            }
+          });
+        }
         self.permissions=data;
         localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(data));
         if(self.session==='user'&&self.userName){
@@ -1236,6 +1248,7 @@ var AUTH={
         if(err){self._showErr('adminPwdErr','保存失败: '+err.message);return;}
         self.permissions=data;
         self.adminPwd=newPwd;
+        localStorage.setItem(self.LS_PREFIX+'admin_pwd',newPwd);
         document.getElementById('adminOldPwd').value='';
         document.getElementById('adminNewPwd2').value='';
         self._hideErr('adminPwdErr');
