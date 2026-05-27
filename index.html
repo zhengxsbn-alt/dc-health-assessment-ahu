@@ -228,6 +228,10 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
           <label>您的姓名</label>
           <input type="text" id="authName" placeholder="请输入姓名" autocomplete="off">
         </div>
+        <div class="auth-fg">
+          <label>用户密钥 <span style="font-size:11px;color:var(--g400)">(首次申请留空)</span></label>
+          <input type="text" id="authUserKey" placeholder="有密钥的直接登录" autocomplete="off">
+        </div>
         <button class="auth-btn auth-btn-pri" id="authApplyBtn" onclick="AUTH.submitApply()">提交申请</button>
         <div id="authCodeArea" style="display:none">
           <div style="font-size:13px;color:var(--g600);margin-top:14px;margin-bottom:4px">📋 您的申请码（发给管理员）：</div>
@@ -694,8 +698,14 @@ var AUTH={
   checkAccess:function(perm){
     if(!perm||!perm.approved)return false;
     var name=this.userName;
-    if(!name)return perm.approved.some(function(u){return u.deviceId===AUTH.deviceId;});
-    return perm.approved.some(function(u){return u.name===name;});
+    var key=localStorage.getItem(this.LS_PREFIX+'user_key');
+    if(name&&key){
+      return perm.approved.some(function(u){return u.name===name&&u.key===key;});
+    }
+    if(name){
+      return perm.approved.some(function(u){return u.name===name;});
+    }
+    return perm.approved.some(function(u){return u.deviceId===AUTH.deviceId;});
   },
 
   verifyAdminPassword:function(password,perm){
@@ -710,6 +720,13 @@ var AUTH={
     var salt=Math.random().toString(36).substr(2,8);
     var hash=CryptoJS.SHA256(salt+password).toString();
     return 'sha256:'+salt+':'+hash;
+  },
+
+  _generateUserKey:function(){
+    var c='abcdefghjkmnpqrstuvwxyz23456789';
+    var key='';
+    for(var i=0;i<8;i++) key+=c.charAt(Math.floor(Math.random()*c.length));
+    return key;
   },
 
   generateAppCode:function(name){
@@ -756,12 +773,17 @@ var AUTH={
   submitApply:function(){
     var name=document.getElementById('authName').value.trim();
     if(!name){this._showErr('authApplyErr','请输入姓名');return;}
-    // If name already approved, log in directly
-    if(this.permissions&&this.permissions.approved){
-      var found=this.permissions.approved.some(function(u){return u.name===name;});
-      if(found){
+    var key=document.getElementById('authUserKey').value.trim();
+    // If user key provided, verify and log in directly
+    if(key&&this.permissions&&this.permissions.approved){
+      var user=this.permissions.approved.find(function(u){return u.name===name&&u.key===key;});
+      if(user){
         this.login('user',name);
+        localStorage.setItem(this.LS_PREFIX+'user_key',key);
         this._enterApp();
+        return;
+      }else{
+        this._showErr('authApplyErr','姓名或密钥不正确');
         return;
       }
     }
@@ -857,25 +879,26 @@ var AUTH={
     this.fetchPermissions(function(perm){
       if(!perm||perm.notFound){self._showErr('adminApproveErr','权限数据不存在');return;}
       if(!perm.approved)perm.approved=[];
-      var exists=perm.approved.some(function(u){return u.deviceId===data.d;});
+      var exists=perm.approved.some(function(u){return u.name===data.n;});
       if(exists){self._showErr('adminApproveErr','该用户已授权');return;}
-      perm.approved.push({deviceId:data.d,name:data.n,approvedAt:new Date().toISOString()});
+      var userKey=self._generateUserKey();
+      perm.approved.push({deviceId:data.d,name:data.n,approvedAt:new Date().toISOString(),key:userKey});
       self.savePermissions(perm,function(err){
         if(err){self._showErr('adminApproveErr','保存失败: '+err.message);return;}
         self.permissions=perm;
         document.getElementById('adminAppCode').value='';
         self._hideErr('adminApproveErr');
         self._renderUserList();
-        showToast('✅ 已授权用户: '+data.n);
+        showToast('✅ 已授权用户: '+data.n+'，密钥: '+userKey);
       });
     });
   },
 
-  revokeUser:function(deviceId){
+  revokeUser:function(name){
     var self=this;
     this.fetchPermissions(function(perm){
       if(!perm||!perm.approved)return;
-      perm.approved=perm.approved.filter(function(u){return u.deviceId!==deviceId;});
+      perm.approved=perm.approved.filter(function(u){return u.name!==name;});
       self.savePermissions(perm,function(err){
         if(err){showToast('❌ 撤销失败: '+err.message);return;}
         self.permissions=perm;
@@ -924,6 +947,7 @@ var AUTH={
     document.getElementById('authApplyBtn').textContent='提交申请';
     document.getElementById('authApplyBtn').disabled=false;
     document.getElementById('authCodeArea').style.display='none';
+    document.getElementById('authUserKey').value='';
     this._hideErr('authApplyErr');
     this._hideErr('authAdminErr');
     this._hideErr('authSetupErr');
@@ -965,7 +989,7 @@ var AUTH={
     }
     var html='';
     this.permissions.approved.forEach(function(u){
-      html+='<div class="admin-user-item"><div><div class="admin-user-name">'+u.name+'</div><div class="admin-user-id">ID: '+u.deviceId+'</div></div><button class="admin-revoke-btn" onclick="AUTH.revokeUser(\''+u.deviceId+'\')">撤销</button></div>';
+      html+='<div class="admin-user-item"><div><div class="admin-user-name">'+u.name+'</div><div class="admin-user-id">密钥: '+(u.key||'无')+'</div></div><button class="admin-revoke-btn" onclick="AUTH.revokeUser(\''+u.name+'\')">撤销</button></div>';
     });
     list.innerHTML=html;
   },
