@@ -834,7 +834,7 @@ var AUTH={
       }
       self.permissions=permData;
       localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(permData));
-      if(action!=='forceChangePwd'){
+      if(action!=='forceChangePwd'||localStorage.getItem(self.LS_PREFIX+'gh_token')){
         self._syncToGitHub(function(err){
           if(err){cb&&cb(new Error('本地保存成功，但云端同步失败: '+err.message));return;}
           cb&&cb(null,permData);
@@ -1053,16 +1053,16 @@ var AUTH={
         self.permissions=data;
         localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(data));
         if(self.session==='user'&&self.userName){
+          var isRevoked=data.revoked&&data.revoked.some(function(r){return r===self.userName;});
           var user=data.users&&data.users.find(function(u){return u.name===self.userName;});
-          if(!user||user.active===false){
+          if(isRevoked||!user||user.active===false){
             self.doLogout();
-            showToast('⚠️ 您的账号已被停用');
+            showToast('⚠️ 您的账号已被停用或删除');
           }
-    }
+        }
       })
       .catch(function(){});
   },
-
   startCDNCheck:function(){
     var self=this;
     if(this._cdnTimer)clearInterval(this._cdnTimer);
@@ -1171,6 +1171,7 @@ var AUTH={
       if(err){self._showErr('authSetupErr','保存失败: '+err.message);return;}
       self.permissions=data;
       self.adminPwd=pwd;
+      localStorage.setItem(self.LS_PREFIX+'admin_pwd',pwd);
       self.login('admin','管理员');
       self._enterApp();
     });
