@@ -973,23 +973,25 @@ var AUTH={
       self.permissions=perm;
       document.getElementById('authAdminSetup').style.display='none';
       document.getElementById('authAdminLogin').style.display='block';
-      // Check existing session
-      if(self.session==='admin'){
+      // Auto-login: if this device is already approved, enter app directly
+      if(self.checkAccess(perm)){
+        self.login('user',self.userName||self._findApprovedName(perm)||'用户');
         self._enterApp();
-      }else if(self.session==='user'||self.session==='pending'){
-        if(self.checkAccess(perm)){
-          self.login('user',self.userName||'用户');
-          self._enterApp();
-        }else if(self.session==='pending'){
-          self._showAuthScreen();
-          self._showWaitPane();
-        }else{
-          self._showAuthScreen();
-        }
+      }else if(self.session==='admin'){
+        self._enterApp();
+      }else if(self.session==='pending'){
+        self._showAuthScreen();
+        self._showWaitPane();
       }else{
         self._showAuthScreen();
       }
     });
+  },
+
+  _findApprovedName:function(perm){
+    if(!perm||!perm.approved)return '';
+    var u=perm.approved.find(function(x){return x.deviceId===AUTH.deviceId;});
+    return u?u.name:'';
   }
 };
 
