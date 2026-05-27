@@ -654,6 +654,7 @@ var AUTH={
   GH_PATH:'permission.json',
   GH_PAGES_URL:'https://zhengxsbn-alt.github.io/dc-health-assessment-ahu/permission.json',
   GH_OWNER:'zhengxsbn-alt',
+  WORKER_URL:'https://dc-ops-proxy.zhengxsbn.workers.dev',
   LS_PREFIX:'auth_ahu_',
   APP_TITLE:'AHU健康度评估',
   session:null,
@@ -701,44 +702,23 @@ var AUTH={
     xhr.send();
   },
 
-  savePermissions:function(mutationFn,cb){
-    var token=localStorage.getItem('gh_token');
-    if(!token){cb&&cb(new Error('GitHub Token未配置，请管理员在此设备上配置Token'));return;}
-    var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_PATH+'?t='+Date.now();
-    var gxhr=new XMLHttpRequest();
-    gxhr.open('GET',apiUrl,true);
-    gxhr.setRequestHeader('Authorization','token '+token);
-    gxhr.setRequestHeader('Accept','application/vnd.github.v3+json');
-    gxhr.onload=function(){
-      var sha=null,currentData=null;
-      if(gxhr.status===200){
-        try{var resp=JSON.parse(gxhr.responseText);sha=resp.sha;currentData=JSON.parse(decodeURIComponent(escape(atob(resp.content))));}catch(e){}
-      }else if(gxhr.status!==404){
-        var msg='获取权限数据失败('+gxhr.status+')';
-        try{var e2=JSON.parse(gxhr.responseText);msg=e2.message||msg;}catch(ex){}
-        cb&&cb(new Error(msg));return;
-      }
-      var newData;
-      try{newData=mutationFn(currentData);}catch(e){cb&&cb(e);return;}
-      if(!newData){cb&&cb(new Error('操作失败'));return;}
-      var json=JSON.stringify(newData,null,2);
-      var content=btoa(unescape(encodeURIComponent(json)));
-      var putData={message:'Update permissions',content:content,branch:'main'};
-      if(sha)putData.sha=sha;
-      var pxhr=new XMLHttpRequest();
-      pxhr.open('PUT',apiUrl,true);
-      pxhr.setRequestHeader('Authorization','token '+token);
-      pxhr.setRequestHeader('Accept','application/vnd.github.v3+json');
-      pxhr.setRequestHeader('Content-Type','application/json');
-      pxhr.onload=function(){
-        if(pxhr.status>=200&&pxhr.status<300){cb&&cb(null,newData);}
-        else{var msg='GitHub写入失败';try{var e=JSON.parse(pxhr.responseText);msg=e.message||msg;}catch(ex){}cb&&cb(new Error(msg));}
-      };
-      pxhr.onerror=function(){cb&&cb(new Error('网络错误'));};
-      pxhr.send(JSON.stringify(putData));
+  savePermissions:function(action,credentials,params,cb){
+    var workerUrl=this.WORKER_URL;
+    if(!workerUrl){cb&&cb(new Error('服务未配置，请联系管理员部署Worker'));return;}
+    var body={repo:this.GH_REPO,action:action,credentials:credentials,params:params};
+    var xhr=new XMLHttpRequest();
+    xhr.open('POST',workerUrl,true);
+    xhr.setRequestHeader('Content-Type','application/json');
+    xhr.timeout=15000;
+    xhr.onload=function(){
+      var resp;
+      try{resp=JSON.parse(xhr.responseText);}catch(e){}
+      if(xhr.status>=200&&xhr.status<300&&resp&&resp.success){cb&&cb(null,resp.data);}
+      else{var msg=(resp&&resp.error)||'保存失败';cb&&cb(new Error(msg));}
     };
-    gxhr.onerror=function(){cb&&cb(new Error('网络错误'));};
-    gxhr.send();
+    xhr.onerror=function(){cb&&cb(new Error('网络错误'));};
+    xhr.ontimeout=function(){cb&&cb(new Error('请求超时'));};
+    xhr.send(JSON.stringify(body));
   },
 
   verifyAdminPassword:function(password,perm){
@@ -836,16 +816,13 @@ var AUTH={
     if(!pwd){this._showErr('authSetupErr','请设置密码');return;}
     if(pwd!==pwd2){this._showErr('authSetupErr','两次密码不一致');return;}
     if(pwd.length<4){this._showErr('authSetupErr','密码至少4位');return;}
-    var token=document.getElementById('authGhToken').value.trim();
-    var m=token.match(/ghp_[A-Za-z0-9]{36}/);
-    if(m)token=m[0];
-    if(!token||token.indexOf('ghp_')!==0){this._showErr('authSetupErr','Token格式不正确，应以ghp_开头');return;}
-    localStorage.setItem('gh_token',token);
     var self=this;
-    var permData={adminHash:this.hashPassword(pwd),users:[],version:2};
-    this.savePermissions(function(){return permData;},function(err,data){
+    this.savePermissions('setupAdmin',{},{
+      adminHash:this.hashPassword(pwd)
+    },function(err,data){
       if(err){self._showErr('authSetupErr','保存失败: '+err.message);return;}
       self.permissions=data;
+      self.adminPwd=pwd;
       self.login('admin','管理员');
       self._enterApp();
     });
@@ -886,37 +863,31 @@ var AUTH={
     if(!pwd){this._showErr('adminCreateErr','请输入初始密码');return;}
     if(pwd.length<4){this._showErr('adminCreateErr','密码至少4位');return;}
     var self=this;
-    this.savePermissions(function(perm){
-      if(!perm)perm={users:[],version:2};
-      if(!perm.users)perm.users=[];
-      var exists=perm.users.some(function(u){return u.name===name;});
-      if(exists)throw new Error('用户名已存在');
-      perm.users.push({name:name,pwdHash:self.hashPassword(pwd),initialPwd:true,pwdSetAt:Date.now(),pwdExpireHours:expireH,active:true});
-      return perm;
-    },function(err,data){
-      if(err){self._showErr('adminCreateErr','保存失败: '+err.message);return;}
-      self.permissions=data;
-      document.getElementById('adminNewName').value='';
-      document.getElementById('adminNewPwd').value='';
-      self._hideErr('adminCreateErr');
-      self._renderUserList();
-      showToast('✅ 已创建用户: '+name);
-    });
+    this.savePermissions('createUser',
+      {adminPwd:this.adminPwd},
+      {name:name,pwdHash:this.hashPassword(pwd),pwdExpireHours:expireH},
+      function(err,data){
+        if(err){self._showErr('adminCreateErr','保存失败: '+err.message);return;}
+        self.permissions=data;
+        document.getElementById('adminNewName').value='';
+        document.getElementById('adminNewPwd').value='';
+        self._hideErr('adminCreateErr');
+        self._renderUserList();
+        showToast('✅ 已创建用户: '+name);
+      });
   },
 
   revokeUser:function(name){
     var self=this;
-    this.savePermissions(function(perm){
-      if(!perm)return {adminHash:'',users:[],version:2};
-      if(!perm.users)perm.users=[];
-      perm.users=perm.users.filter(function(u){return u.name!==name;});
-      return perm;
-    },function(err,data){
-      if(err){showToast('❌ 删除失败: '+err.message);return;}
-      self.permissions=data;
-      self._renderUserList();
-      showToast('✅ 已删除用户: '+name);
-    });
+    this.savePermissions('revokeUser',
+      {adminPwd:this.adminPwd},
+      {name:name},
+      function(err,data){
+        if(err){showToast('❌ 删除失败: '+err.message);return;}
+        self.permissions=data;
+        self._renderUserList();
+        showToast('✅ 已删除用户: '+name);
+      });
   },
 
   resetUserPwd:function(name){
@@ -924,21 +895,15 @@ var AUTH={
     var c='abcdefghjkmnpqrstuvwxyz23456789';
     for(var i=0;i<6;i++)newPwd+=c.charAt(Math.floor(Math.random()*c.length));
     var self=this;
-    this.savePermissions(function(perm){
-      if(!perm||!perm.users)throw new Error('无用户数据');
-      var user=perm.users.find(function(u){return u.name===name;});
-      if(!user)throw new Error('用户不存在');
-      user.pwdHash=self.hashPassword(newPwd);
-      user.initialPwd=true;
-      user.pwdSetAt=Date.now();
-      user.active=true;
-      return perm;
-    },function(err,data){
-      if(err){showToast('❌ 重置失败: '+err.message);return;}
-      self.permissions=data;
-      self._renderUserList();
-      showToast('✅ 已重置 '+name+' 密码为: '+newPwd);
-    });
+    this.savePermissions('resetUserPwd',
+      {adminPwd:this.adminPwd},
+      {name:name,pwdHash:this.hashPassword(newPwd)},
+      function(err,data){
+        if(err){showToast('❌ 重置失败: '+err.message);return;}
+        self.permissions=data;
+        self._renderUserList();
+        showToast('✅ 已重置 '+name+' 密码为: '+newPwd);
+      });
   },
 
   changeAdminPwd:function(){
@@ -948,18 +913,18 @@ var AUTH={
     if(newPwd.length<4){this._showErr('adminPwdErr','新密码至少4位');return;}
     if(!this.verifyAdminPassword(oldPwd,this.permissions)){this._showErr('adminPwdErr','当前密码错误');return;}
     var self=this;
-    this.savePermissions(function(perm){
-      if(!perm)throw new Error('无法获取权限数据');
-      perm.adminHash=self.hashPassword(newPwd);
-      return perm;
-    },function(err,data){
-      if(err){self._showErr('adminPwdErr','保存失败: '+err.message);return;}
-      self.permissions=data;
-      document.getElementById('adminOldPwd').value='';
-      document.getElementById('adminNewPwd2').value='';
-      self._hideErr('adminPwdErr');
-      showToast('✅ 密码已修改');
-    });
+    this.savePermissions('changeAdminPwd',
+      {oldAdminPwd:oldPwd},
+      {newAdminHash:this.hashPassword(newPwd)},
+      function(err,data){
+        if(err){self._showErr('adminPwdErr','保存失败: '+err.message);return;}
+        self.permissions=data;
+        self.adminPwd=newPwd;
+        document.getElementById('adminOldPwd').value='';
+        document.getElementById('adminNewPwd2').value='';
+        self._hideErr('adminPwdErr');
+        showToast('✅ 密码已修改');
+      });
   },
 
   forceChangePwd:function(){
@@ -969,22 +934,18 @@ var AUTH={
     if(pwd.length<4){this._showErr('forcePwdErr','密码至少4位');return;}
     if(pwd!==pwd2){this._showErr('forcePwdErr','两次密码不一致');return;}
     var self=this;
-    this.savePermissions(function(perm){
-      if(!perm||!perm.users)throw new Error('无法获取权限数据');
-      var user=perm.users.find(function(u){return u.name===self.userName;});
-      if(!user)throw new Error('用户不存在');
-      user.pwdHash=self.hashPassword(pwd);
-      user.initialPwd=false;
-      user.active=true;
-      return perm;
-    },function(err,data){
-      if(err){self._showErr('forcePwdErr','保存失败: '+err.message);return;}
-      self.permissions=data;
-      localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
-      document.getElementById('changePwdModal').classList.remove('show');
-      showToast('✅ 密码修改成功');
-      self._enterApp();
-    });
+    var userPwd=localStorage.getItem(this.LS_PREFIX+'user_pwd');
+    this.savePermissions('forceChangePwd',
+      {userName:this.userName,userPwd:userPwd},
+      {newPwdHash:this.hashPassword(pwd)},
+      function(err,data){
+        if(err){self._showErr('forcePwdErr','保存失败: '+err.message);return;}
+        self.permissions=data;
+        localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
+        document.getElementById('changePwdModal').classList.remove('show');
+        showToast('✅ 密码修改成功');
+        self._enterApp();
+      });
   },
 
   _showForceChangePwd:function(){
