@@ -787,7 +787,7 @@ var AUTH={
           if(!permData.users)permData.users=[];
           if(permData.users.some(function(u){return u.name===params.name;}))throw new Error('用户名已存在');
           if(permData.revoked&&permData.revoked.some(function(r){return r===params.name;}))throw new Error('该用户名已被删除，不可重复使用');
-          permData.users.push({name:params.name,displayName:params.displayName||'',pwdHash:params.pwdHash,active:true,invitedBy:'',pwdSetAt:Date.now()});
+          permData.users.push({name:params.name,displayName:params.displayName||'',pwdHash:params.pwdHash,active:true,invitedBy:'',initialPwd:true,pwdSetAt:Date.now()});
           break;
         case 'resetUserPwd':
           if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
@@ -1070,6 +1070,8 @@ var AUTH={
           if(isRevoked||!user||user.active===false){
             self.doLogout();
             showToast('⚠️ 您的账号已被停用或删除');
+          }else if(user.initialPwd){
+            self._showForceChangePwd();
           }
         }
       })
@@ -1345,6 +1347,11 @@ var AUTH={
     }else{
       document.getElementById('menuAuthMgmt').style.display='none';
       document.getElementById('menuChangePwd').style.display='';
+      var user=this.findUser(this.permissions,this.userName);
+      if(user&&user.initialPwd){
+        this._showForceChangePwd();
+        return;
+      }
     }
     document.getElementById('menuLogout').style.display='';
     this.startCDNCheck();
