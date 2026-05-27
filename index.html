@@ -1044,6 +1044,7 @@ var AUTH={
     if(!this.permissions){this._showErr('authAdminErr','权限数据未加载');return;}
     if(this.verifyAdminPassword(pwd,this.permissions)){
       this.adminPwd=pwd;
+      localStorage.setItem(this.LS_PREFIX+'admin_pwd',pwd);
       this.login('admin','管理员');
       this._enterApp();
     }else{
@@ -1255,7 +1256,10 @@ var AUTH={
           }
         }
       }
-      if(self.session==='admin'){self._enterApp();return;}
+      if(self.session==='admin'){
+        self.adminPwd=localStorage.getItem(self.LS_PREFIX+'admin_pwd')||'';
+        self._enterApp();return;
+      }
       self._showAuthScreen();
     });
   }
