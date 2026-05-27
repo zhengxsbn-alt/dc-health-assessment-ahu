@@ -703,14 +703,7 @@ var AUTH={
 
   savePermissions:function(mutationFn,cb){
     var token=localStorage.getItem('gh_token');
-    if(!token){
-      token=prompt('保存数据需要GitHub Token，请输入（只需输入一次）:');
-      if(!token){cb&&cb(new Error('GitHub Token未配置'));return;}
-      var m=token.match(/ghp_[A-Za-z0-9]{36}/);
-      if(m)token=m[0];
-      if(token.indexOf('ghp_')!==0){cb&&cb(new Error('Token格式不正确'));return;}
-      localStorage.setItem('gh_token',token);
-    }
+    if(!token){cb&&cb(new Error('GitHub Token未配置，请管理员在此设备上配置Token'));return;}
     var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_PATH+'?t='+Date.now();
     var gxhr=new XMLHttpRequest();
     gxhr.open('GET',apiUrl,true);
