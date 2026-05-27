@@ -647,7 +647,8 @@ var AUTH={
     var permData=null;
     if(stored){try{permData=JSON.parse(stored);}catch(e){}}
     this.permissions=permData;
-    cb&&cb(permData);
+    if(!permData){cb&&cb({notFound:true});}
+    else{cb&&cb(permData);}
   },
 
   savePermissions:function(action,credentials,params,cb){
