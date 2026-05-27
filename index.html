@@ -310,6 +310,32 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
   </div>
 </div>
 
+<!-- Change Password Modal (for regular users) -->
+<div class="admin-modal" id="userChangePwdModal">
+  <div class="admin-box">
+    <div class="admin-box-hdr">
+      <h3>🔑 修改密码</h3>
+      <button class="admin-close" onclick="AUTH.closeChangePwdModal()">&times;</button>
+    </div>
+    <div class="admin-box-body">
+      <div class="auth-fg">
+        <label>当前密码</label>
+        <input type="password" id="userOldPwd" placeholder="输入当前密码">
+      </div>
+      <div class="auth-fg">
+        <label>新密码</label>
+        <input type="password" id="userNewPwd" placeholder="输入新密码（至少4位）">
+      </div>
+      <div class="auth-fg">
+        <label>确认新密码</label>
+        <input type="password" id="userNewPwd2" placeholder="再次输入新密码">
+      </div>
+      <button class="auth-btn auth-btn-pri" onclick="AUTH.userChangePwd()">修改密码</button>
+      <div class="auth-err" id="userChangePwdErr"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Admin Panel Modal -->
 <div class="admin-modal" id="adminModal">
   <div class="admin-box">
@@ -333,6 +359,23 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
         </div>
         <button class="auth-btn auth-btn-pri" onclick="AUTH.generateInvitations()">生成邀请码</button>
         <div id="adminInviteList"></div>
+      </div>
+      <div class="admin-sec">
+        <h4>➕ 创建用户</h4>
+        <div class="auth-fg">
+          <label>用户名</label>
+          <input type="text" id="adminNewName" placeholder="输入用户名" autocomplete="off">
+        </div>
+        <div class="auth-fg">
+          <label>姓名标注</label>
+          <input type="text" id="adminNewDisplayName" placeholder="可选，如：张三" autocomplete="off">
+        </div>
+        <div class="auth-fg">
+          <label>初始密码</label>
+          <input type="password" id="adminNewPwd" placeholder="设置初始密码">
+        </div>
+        <button class="auth-btn auth-btn-pri" onclick="AUTH.createUser()">创建用户</button>
+        <div class="auth-err" id="adminCreateErr"></div>
       </div>
       <div class="admin-sec">
         <h4>👥 用户列表</h4>
@@ -387,6 +430,7 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
     <button class="hdr-menu-item" onclick="importJSON();closeHdrMenu()"><span class="mi">📂</span>导入数据(JSON)</button>
     <div class="hdr-menu-divider"></div>
     <button class="hdr-menu-item" id="menuAuthMgmt" onclick="AUTH.openAdminPanel();closeHdrMenu()" style="display:none"><span class="mi">👥</span>权限管理</button>
+    <button class="hdr-menu-item" id="menuChangePwd" onclick="AUTH.showChangePwdModal();closeHdrMenu()" style="display:none"><span class="mi">🔑</span>修改密码</button>
     <button class="hdr-menu-item" id="menuLogout" onclick="AUTH.doLogout();closeHdrMenu()" style="display:none"><span class="mi">🚪</span>退出登录</button>
     <div class="hdr-menu-divider"></div>
     <button class="hdr-menu-item" onclick="clearAll();closeHdrMenu()" style="color:var(--err)"><span class="mi">🗑️</span>清空数据</button>
@@ -737,6 +781,14 @@ var AUTH={
           if(!permData.users)throw new Error('无用户数据');
           permData.users=permData.users.filter(function(u){return u.name!==params.name;});
           break;
+        case 'createUser':
+          if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
+            throw new Error('管理员密码错误');
+          if(!permData.users)permData.users=[];
+          if(permData.users.some(function(u){return u.name===params.name;}))throw new Error('用户名已存在');
+          if(permData.revoked&&permData.revoked.some(function(r){return r===params.name;}))throw new Error('该用户名已被删除，不可重复使用');
+          permData.users.push({name:params.name,displayName:params.displayName||'',pwdHash:params.pwdHash,active:true,invitedBy:'',pwdSetAt:Date.now()});
+          break;
         case 'resetUserPwd':
           if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
             throw new Error('管理员密码错误');
@@ -816,6 +868,29 @@ var AUTH={
       .catch(function(e){cb&&cb(e);});
   },
 
+  createUser:function(){
+    var name=document.getElementById('adminNewName').value.trim();
+    var displayName=document.getElementById('adminNewDisplayName').value.trim();
+    var pwd=document.getElementById('adminNewPwd').value;
+    if(!name){this._showErr('adminCreateErr','请输入用户名');return;}
+    if(!pwd){this._showErr('adminCreateErr','请输入初始密码');return;}
+    if(pwd.length<4){this._showErr('adminCreateErr','密码至少4位');return;}
+    var self=this;
+    this.savePermissions('createUser',
+      {adminPwd:this.adminPwd},
+      {name:name,displayName:displayName,pwdHash:this.hashPassword(pwd)},
+      function(err,data){
+        if(err){self._showErr('adminCreateErr','保存失败: '+err.message);return;}
+        self.permissions=data;
+        document.getElementById('adminNewName').value='';
+        document.getElementById('adminNewDisplayName').value='';
+        document.getElementById('adminNewPwd').value='';
+        self._hideErr('adminCreateErr');
+        self._renderUserList();
+        showToast('✅ 已创建用户: '+name);
+      });
+  },
+
   generateInvitations:function(){
     var count=parseInt(document.getElementById('inviteCount').value)||1;
     var expiryDays=parseInt(document.getElementById('inviteExpiry').value)||7;
@@ -863,7 +938,9 @@ var AUTH={
           if(localData&&localData.users){
             localData.users.forEach(function(lu){
               if(!data.users.some(function(cu){return cu.name===lu.name;})){
-                data.users.push(lu);
+                if(!data.revoked||!data.revoked.some(function(r){return r===lu.name;})){
+                  data.users.push(lu);
+                }
               }
             });
           }
@@ -1019,6 +1096,7 @@ var AUTH={
 
   findUser:function(perm,name){
     if(!perm||!perm.users)return null;
+    if(perm.revoked&&perm.revoked.some(function(r){return r===name;}))return null;
     return perm.users.find(function(u){return u.name===name&&u.active!==false;});
   },
 
@@ -1192,6 +1270,38 @@ var AUTH={
     document.getElementById('changePwdModal').classList.add('show');
   },
 
+  showChangePwdModal:function(){
+    document.getElementById('userOldPwd').value='';
+    document.getElementById('userNewPwd').value='';
+    document.getElementById('userNewPwd2').value='';
+    this._hideErr('userChangePwdErr');
+    document.getElementById('userChangePwdModal').classList.add('show');
+  },
+  closeChangePwdModal:function(){
+    document.getElementById('userChangePwdModal').classList.remove('show');
+  },
+  userChangePwd:function(){
+    var oldPwd=document.getElementById('userOldPwd').value;
+    var newPwd=document.getElementById('userNewPwd').value;
+    var newPwd2=document.getElementById('userNewPwd2').value;
+    if(!oldPwd||!newPwd){this._showErr('userChangePwdErr','请填写完整');return;}
+    if(newPwd.length<4){this._showErr('userChangePwdErr','新密码至少4位');return;}
+    if(newPwd!==newPwd2){this._showErr('userChangePwdErr','两次密码不一致');return;}
+    var self=this;
+    var userPwd=localStorage.getItem(this.LS_PREFIX+'user_pwd');
+    if(userPwd!==oldPwd){this._showErr('userChangePwdErr','当前密码错误');return;}
+    this.savePermissions('forceChangePwd',
+      {userName:this.userName,userPwd:userPwd},
+      {newPwdHash:this.hashPassword(newPwd)},
+      function(err,data){
+        if(err){self._showErr('userChangePwdErr','修改失败: '+err.message);return;}
+        self.permissions=data;
+        localStorage.setItem(self.LS_PREFIX+'user_pwd',newPwd);
+        document.getElementById('userChangePwdModal').classList.remove('show');
+        showToast('✅ 密码修改成功');
+      });
+  },
+
   _showErr:function(id,msg){
     var el=document.getElementById(id);if(!el)return;
     el.textContent=msg;el.classList.add('show');
@@ -1217,8 +1327,10 @@ var AUTH={
     document.getElementById('authScreen').classList.add('hidden');
     if(this.session==='admin'){
       document.getElementById('menuAuthMgmt').style.display='';
+      document.getElementById('menuChangePwd').style.display='none';
     }else{
       document.getElementById('menuAuthMgmt').style.display='none';
+      document.getElementById('menuChangePwd').style.display='';
     }
     document.getElementById('menuLogout').style.display='';
     this.startCDNCheck();
