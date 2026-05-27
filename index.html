@@ -1419,7 +1419,9 @@ var AUTH={
       }
       if(self.session==='admin'){
         self.adminPwd=localStorage.getItem(self.LS_PREFIX+'admin_pwd')||'';
-        self._enterApp();return;
+        if(self.adminPwd){
+          self._enterApp();return;
+        }
       }
       self._showAuthScreen();
     });
