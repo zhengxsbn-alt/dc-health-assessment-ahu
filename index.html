@@ -218,29 +218,22 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
       <p>请登录后使用</p>
     </div>
     <div class="auth-tabs">
-      <button class="auth-tab on" id="authTabApply" onclick="AUTH.switchTab('apply')">申请使用</button>
+      <button class="auth-tab on" id="authTabUser" onclick="AUTH.switchTab('user')">用户登录</button>
       <button class="auth-tab" id="authTabAdmin" onclick="AUTH.switchTab('admin')">管理员登录</button>
     </div>
     <div class="auth-body">
-      <!-- Apply pane -->
-      <div class="auth-pane on" id="authPaneApply">
+      <!-- User login pane -->
+      <div class="auth-pane on" id="authPaneUser">
         <div class="auth-fg">
-          <label>您的姓名</label>
-          <input type="text" id="authName" placeholder="请输入姓名" autocomplete="off">
+          <label>用户名</label>
+          <input type="text" id="authName" placeholder="请输入用户名" autocomplete="off">
         </div>
         <div class="auth-fg">
-          <label>用户密钥 <span style="font-size:11px;color:var(--g400)">(首次申请留空)</span></label>
-          <input type="text" id="authUserKey" placeholder="有密钥的直接登录" autocomplete="off">
+          <label>密码</label>
+          <input type="password" id="authUserPwd" placeholder="请输入密码">
         </div>
-        <button class="auth-btn auth-btn-pri" id="authApplyBtn" onclick="AUTH.submitApply()">提交申请</button>
-        <div id="authCodeArea" style="display:none">
-          <div style="font-size:13px;color:var(--g600);margin-top:14px;margin-bottom:4px">📋 您的申请码（发给管理员）：</div>
-          <div class="auth-code-box" id="authCodeBox">
-            <button class="copy-btn" onclick="AUTH.copyCode()">复制</button>
-            <span id="authCodeText"></span>
-          </div>
-        </div>
-        <div class="auth-err" id="authApplyErr"></div>
+        <button class="auth-btn auth-btn-pri" onclick="AUTH.userLogin()">登录</button>
+        <div class="auth-err" id="authUserErr"></div>
       </div>
       <!-- Admin login pane -->
       <div class="auth-pane" id="authPaneAdmin">
@@ -270,16 +263,28 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
           <div class="auth-err" id="authAdminErr"></div>
         </div>
       </div>
-      <!-- Wait for approval -->
-      <div class="auth-pane" id="authPaneWait">
-        <div class="auth-wait">
-          <div class="spinner"></div>
-          <div>申请已提交，等待管理员审批...</div>
-          <div style="font-size:12px;color:var(--g400);margin-top:8px">请将申请码发送给管理员，审批后重新打开即可使用</div>
-          <button class="auth-btn auth-btn-pri" style="margin-top:16px" onclick="AUTH.refreshAccess()">刷新权限</button>
-          <div class="auth-err" id="authWaitErr"></div>
-        </div>
+    </div>
+  </div>
+</div>
+
+<!-- Force Change Password Modal -->
+<div class="admin-modal" id="changePwdModal">
+  <div class="admin-box">
+    <div class="admin-box-hdr">
+      <h3>🔑 修改密码</h3>
+    </div>
+    <div class="admin-box-body">
+      <div style="font-size:13px;color:var(--g600);margin-bottom:10px">首次登录需修改初始密码：</div>
+      <div class="auth-fg">
+        <label>新密码</label>
+        <input type="password" id="forceNewPwd" placeholder="请输入新密码（至少4位）">
       </div>
+      <div class="auth-fg">
+        <label>确认新密码</label>
+        <input type="password" id="forceNewPwd2" placeholder="再次输入新密码">
+      </div>
+      <button class="auth-btn auth-btn-pri" onclick="AUTH.forceChangePwd()">修改密码</button>
+      <div class="auth-err" id="forcePwdErr"></div>
     </div>
   </div>
 </div>
@@ -293,16 +298,24 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
     </div>
     <div class="admin-box-body">
       <div class="admin-sec">
-        <h4>✅ 审批申请</h4>
+        <h4>➕ 创建用户</h4>
         <div class="auth-fg">
-          <label>粘贴申请码</label>
-          <input type="text" id="adminAppCode" placeholder="粘贴用户发来的申请码" autocomplete="off">
+          <label>用户名</label>
+          <input type="text" id="adminNewName" placeholder="输入用户名" autocomplete="off">
         </div>
-        <button class="auth-btn auth-btn-pri" onclick="AUTH.approveUser()">审批通过</button>
-        <div class="auth-err" id="adminApproveErr"></div>
+        <div class="auth-fg">
+          <label>初始密码</label>
+          <input type="password" id="adminNewPwd" placeholder="设置初始密码">
+        </div>
+        <div class="auth-fg">
+          <label>密码有效期（小时）</label>
+          <input type="number" id="adminPwdExpire" value="24" min="1" max="720" placeholder="24">
+        </div>
+        <button class="auth-btn auth-btn-pri" onclick="AUTH.createUser()">创建用户</button>
+        <div class="auth-err" id="adminCreateErr"></div>
       </div>
       <div class="admin-sec">
-        <h4>👥 已授权用户</h4>
+        <h4>👥 用户列表</h4>
         <div id="adminUserList"></div>
       </div>
       <div class="admin-sec">
@@ -313,7 +326,7 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
         </div>
         <div class="auth-fg">
           <label>新密码</label>
-          <input type="password" id="adminNewPwd" placeholder="输入新密码">
+          <input type="password" id="adminNewPwd2" placeholder="输入新密码">
         </div>
         <button class="auth-btn auth-btn-pri" onclick="AUTH.changeAdminPwd()">修改密码</button>
         <div class="auth-err" id="adminPwdErr"></div>
@@ -633,18 +646,9 @@ var AUTH={
   GH_OWNER:'zhengxsbn-alt',
   LS_PREFIX:'auth_ahu_',
   APP_TITLE:'AHU健康度评估',
-  deviceId:null,
   session:null,
   userName:null,
   permissions:null,
-  _appCode:'',
-
-  generateDeviceId:function(){
-    var c='abcdefghijklmnopqrstuvwxyz0123456789';
-    var id='';
-    for(var i=0;i<12;i++) id+=c.charAt(Math.floor(Math.random()*c.length));
-    return id;
-  },
 
   fetchPermissions:function(cb){
     var url=this.GH_PAGES_URL+'?t='+Date.now();
@@ -665,11 +669,9 @@ var AUTH={
   savePermissions:function(permData,cb){
     var token=localStorage.getItem('gh_token');
     if(!token){cb&&cb(new Error('GitHub Token未配置'));return;}
-    var self=this;
     var json=JSON.stringify(permData,null,2);
     var content=btoa(unescape(encodeURIComponent(json)));
     var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_PATH;
-    // Get existing file SHA for update
     var gxhr=new XMLHttpRequest();
     gxhr.open('GET',apiUrl,true);
     gxhr.setRequestHeader('Authorization','token '+token);
@@ -695,22 +697,17 @@ var AUTH={
     gxhr.send();
   },
 
-  checkAccess:function(perm){
-    if(!perm||!perm.approved)return false;
-    var name=this.userName;
-    var key=localStorage.getItem(this.LS_PREFIX+'user_key');
-    if(name&&key){
-      return perm.approved.some(function(u){return u.name===name&&u.key===key;});
-    }
-    if(name){
-      return perm.approved.some(function(u){return u.name===name;});
-    }
-    return perm.approved.some(function(u){return u.deviceId===AUTH.deviceId;});
-  },
-
   verifyAdminPassword:function(password,perm){
     if(!perm||!perm.adminHash)return false;
     var parts=perm.adminHash.split(':');
+    if(parts.length!==3)return false;
+    var hash=CryptoJS.SHA256(parts[1]+password).toString();
+    return hash===parts[2];
+  },
+
+  verifyUserPassword:function(password,user){
+    if(!user||!user.pwdHash)return false;
+    var parts=user.pwdHash.split(':');
     if(parts.length!==3)return false;
     var hash=CryptoJS.SHA256(parts[1]+password).toString();
     return hash===parts[2];
@@ -722,31 +719,20 @@ var AUTH={
     return 'sha256:'+salt+':'+hash;
   },
 
-  _generateUserKey:function(){
-    var c='abcdefghjkmnpqrstuvwxyz23456789';
-    var key='';
-    for(var i=0;i<8;i++) key+=c.charAt(Math.floor(Math.random()*c.length));
-    return key;
+  isUserExpired:function(user){
+    if(!user.initialPwd)return false;
+    if(!user.pwdSetAt||!user.pwdExpireHours)return false;
+    return(Date.now()-user.pwdSetAt)>user.pwdExpireHours*3600000;
   },
 
-  generateAppCode:function(name){
-    var data=JSON.stringify({n:name,d:this.deviceId,t:Date.now()});
-    return btoa(unescape(encodeURIComponent(data)));
-  },
-
-  decodeAppCode:function(code){
-    try{
-      var data=JSON.parse(decodeURIComponent(escape(atob(code))));
-      return data;
-    }catch(e){return null;}
+  findUser:function(perm,name){
+    if(!perm||!perm.users)return null;
+    return perm.users.find(function(u){return u.name===name&&u.active!==false;});
   },
 
   init:function(){
-    this.deviceId=localStorage.getItem(this.LS_PREFIX+'device_id')||this.generateDeviceId();
-    localStorage.setItem(this.LS_PREFIX+'device_id',this.deviceId);
     this.session=localStorage.getItem(this.LS_PREFIX+'session')||'';
     this.userName=localStorage.getItem(this.LS_PREFIX+'user_name')||'';
-    this._appCode=localStorage.getItem(this.LS_PREFIX+'app_code')||'';
   },
 
   login:function(session,name){
@@ -761,50 +747,30 @@ var AUTH={
     this.userName='';
     localStorage.setItem(this.LS_PREFIX+'session','');
     localStorage.setItem(this.LS_PREFIX+'user_name','');
+    localStorage.removeItem(this.LS_PREFIX+'user_pwd');
   },
 
   switchTab:function(tab){
-    document.getElementById('authTabApply').classList.toggle('on',tab==='apply');
+    document.getElementById('authTabUser').classList.toggle('on',tab==='user');
     document.getElementById('authTabAdmin').classList.toggle('on',tab==='admin');
-    document.getElementById('authPaneApply').classList.toggle('on',tab==='apply');
+    document.getElementById('authPaneUser').classList.toggle('on',tab==='user');
     document.getElementById('authPaneAdmin').classList.toggle('on',tab==='admin');
   },
 
-  submitApply:function(){
+  userLogin:function(){
     var name=document.getElementById('authName').value.trim();
-    if(!name){this._showErr('authApplyErr','请输入姓名');return;}
-    var key=document.getElementById('authUserKey').value.trim();
-    // If user key provided, verify and log in directly
-    if(key&&this.permissions&&this.permissions.approved){
-      var user=this.permissions.approved.find(function(u){return u.name===name&&u.key===key;});
-      if(user){
-        this.login('user',name);
-        localStorage.setItem(this.LS_PREFIX+'user_key',key);
-        this._enterApp();
-        return;
-      }else{
-        this._showErr('authApplyErr','姓名或密钥不正确');
-        return;
-      }
-    }
-    var code=this.generateAppCode(name);
-    this._appCode=code;
-    localStorage.setItem(this.LS_PREFIX+'app_code',code);
-    document.getElementById('authCodeArea').style.display='block';
-    document.getElementById('authCodeText').textContent=code;
-    document.getElementById('authApplyBtn').textContent='已提交申请';
-    document.getElementById('authApplyBtn').disabled=true;
-    this._hideErr('authApplyErr');
-    this.login('pending',name);
-  },
-
-  copyCode:function(){
-    var code=this._appCode;
-    if(navigator.clipboard){
-      navigator.clipboard.writeText(code).then(function(){showToast('✅ 已复制申请码');});
-    }else{
-      var ta=document.createElement('textarea');ta.value=code;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('✅ 已复制申请码');
-    }
+    var pwd=document.getElementById('authUserPwd').value;
+    if(!name){this._showErr('authUserErr','请输入用户名');return;}
+    if(!pwd){this._showErr('authUserErr','请输入密码');return;}
+    if(!this.permissions||!this.permissions.users){this._showErr('authUserErr','权限数据未加载');return;}
+    var user=this.findUser(this.permissions,name);
+    if(!user){this._showErr('authUserErr','用户名或密码错误');return;}
+    if(!this.verifyUserPassword(pwd,user)){this._showErr('authUserErr','用户名或密码错误');return;}
+    if(this.isUserExpired(user)){this._showErr('authUserErr','初始密码已过期，请联系管理员重置');return;}
+    this.login('user',name);
+    localStorage.setItem(this.LS_PREFIX+'user_pwd',pwd);
+    if(user.initialPwd){this._showForceChangePwd();}
+    else{this._enterApp();}
   },
 
   adminLogin:function(){
@@ -825,34 +791,18 @@ var AUTH={
     if(!pwd){this._showErr('authSetupErr','请设置密码');return;}
     if(pwd!==pwd2){this._showErr('authSetupErr','两次密码不一致');return;}
     if(pwd.length<4){this._showErr('authSetupErr','密码至少4位');return;}
-    // Save GitHub Token from auth form
     var token=document.getElementById('authGhToken').value.trim();
-    // Handle accidental triple-paste: extract first ghp_... token
     var m=token.match(/ghp_[A-Za-z0-9]{36}/);
     if(m)token=m[0];
     if(!token||token.indexOf('ghp_')!==0){this._showErr('authSetupErr','Token格式不正确，应以ghp_开头');return;}
     localStorage.setItem('gh_token',token);
     var self=this;
-    var permData={adminHash:this.hashPassword(pwd),approved:[],version:1};
+    var permData={adminHash:this.hashPassword(pwd),users:[],version:2};
     this.savePermissions(permData,function(err){
       if(err){self._showErr('authSetupErr','保存失败: '+err.message);return;}
       self.permissions=permData;
       self.login('admin','管理员');
       self._enterApp();
-    });
-  },
-
-  refreshAccess:function(){
-    var self=this;
-    this.fetchPermissions(function(perm){
-      if(!perm||perm.notFound){self._showErr('authWaitErr','无法获取权限数据');return;}
-      self.permissions=perm;
-      if(self.checkAccess(perm)){
-        self.login('user',self.userName||'用户');
-        self._enterApp();
-      }else{
-        self._showErr('authWaitErr','尚未获得审批，请联系管理员');
-      }
     });
   },
 
@@ -870,26 +820,28 @@ var AUTH={
     document.getElementById('adminModal').classList.remove('show');
   },
 
-  approveUser:function(){
-    var code=document.getElementById('adminAppCode').value.trim();
-    if(!code){this._showErr('adminApproveErr','请粘贴申请码');return;}
-    var data=this.decodeAppCode(code);
-    if(!data||!data.n||!data.d){this._showErr('adminApproveErr','无效的申请码');return;}
+  createUser:function(){
+    var name=document.getElementById('adminNewName').value.trim();
+    var pwd=document.getElementById('adminNewPwd').value;
+    var expireH=parseInt(document.getElementById('adminPwdExpire').value)||24;
+    if(!name){this._showErr('adminCreateErr','请输入用户名');return;}
+    if(!pwd){this._showErr('adminCreateErr','请输入初始密码');return;}
+    if(pwd.length<4){this._showErr('adminCreateErr','密码至少4位');return;}
     var self=this;
     this.fetchPermissions(function(perm){
-      if(!perm||perm.notFound){self._showErr('adminApproveErr','权限数据不存在');return;}
-      if(!perm.approved)perm.approved=[];
-      var exists=perm.approved.some(function(u){return u.name===data.n;});
-      if(exists){self._showErr('adminApproveErr','该用户已授权');return;}
-      var userKey=self._generateUserKey();
-      perm.approved.push({deviceId:data.d,name:data.n,approvedAt:new Date().toISOString(),key:userKey});
+      if(!perm){self._showErr('adminCreateErr','无法获取权限数据');return;}
+      if(!perm.users)perm.users=[];
+      var exists=perm.users.some(function(u){return u.name===name;});
+      if(exists){self._showErr('adminCreateErr','用户名已存在');return;}
+      perm.users.push({name:name,pwdHash:self.hashPassword(pwd),initialPwd:true,pwdSetAt:Date.now(),pwdExpireHours:expireH,active:true});
       self.savePermissions(perm,function(err){
-        if(err){self._showErr('adminApproveErr','保存失败: '+err.message);return;}
+        if(err){self._showErr('adminCreateErr','保存失败: '+err.message);return;}
         self.permissions=perm;
-        document.getElementById('adminAppCode').value='';
-        self._hideErr('adminApproveErr');
+        document.getElementById('adminNewName').value='';
+        document.getElementById('adminNewPwd').value='';
+        self._hideErr('adminCreateErr');
         self._renderUserList();
-        showToast('✅ 已授权用户: '+data.n+'，密钥: '+userKey);
+        showToast('✅ 已创建用户: '+name);
       });
     });
   },
@@ -897,20 +849,42 @@ var AUTH={
   revokeUser:function(name){
     var self=this;
     this.fetchPermissions(function(perm){
-      if(!perm||!perm.approved)return;
-      perm.approved=perm.approved.filter(function(u){return u.name!==name;});
+      if(!perm||!perm.users)return;
+      perm.users=perm.users.filter(function(u){return u.name!==name;});
       self.savePermissions(perm,function(err){
-        if(err){showToast('❌ 撤销失败: '+err.message);return;}
+        if(err){showToast('❌ 删除失败: '+err.message);return;}
         self.permissions=perm;
         self._renderUserList();
-        showToast('✅ 已撤销权限');
+        showToast('✅ 已删除用户: '+name);
+      });
+    });
+  },
+
+  resetUserPwd:function(name){
+    var newPwd='';
+    var c='abcdefghjkmnpqrstuvwxyz23456789';
+    for(var i=0;i<6;i++)newPwd+=c.charAt(Math.floor(Math.random()*c.length));
+    var self=this;
+    this.fetchPermissions(function(perm){
+      if(!perm||!perm.users)return;
+      var user=perm.users.find(function(u){return u.name===name;});
+      if(!user)return;
+      user.pwdHash=self.hashPassword(newPwd);
+      user.initialPwd=true;
+      user.pwdSetAt=Date.now();
+      user.active=true;
+      self.savePermissions(perm,function(err){
+        if(err){showToast('❌ 重置失败: '+err.message);return;}
+        self.permissions=perm;
+        self._renderUserList();
+        showToast('✅ 已重置 '+name+' 密码为: '+newPwd);
       });
     });
   },
 
   changeAdminPwd:function(){
     var oldPwd=document.getElementById('adminOldPwd').value;
-    var newPwd=document.getElementById('adminNewPwd').value;
+    var newPwd=document.getElementById('adminNewPwd2').value;
     if(!oldPwd||!newPwd){this._showErr('adminPwdErr','请填写完整');return;}
     if(newPwd.length<4){this._showErr('adminPwdErr','新密码至少4位');return;}
     if(!this.verifyAdminPassword(oldPwd,this.permissions)){this._showErr('adminPwdErr','当前密码错误');return;}
@@ -922,11 +896,43 @@ var AUTH={
         if(err){self._showErr('adminPwdErr','保存失败: '+err.message);return;}
         self.permissions=perm;
         document.getElementById('adminOldPwd').value='';
-        document.getElementById('adminNewPwd').value='';
+        document.getElementById('adminNewPwd2').value='';
         self._hideErr('adminPwdErr');
         showToast('✅ 密码已修改');
       });
     });
+  },
+
+  forceChangePwd:function(){
+    var pwd=document.getElementById('forceNewPwd').value;
+    var pwd2=document.getElementById('forceNewPwd2').value;
+    if(!pwd){this._showErr('forcePwdErr','请输入新密码');return;}
+    if(pwd.length<4){this._showErr('forcePwdErr','密码至少4位');return;}
+    if(pwd!==pwd2){this._showErr('forcePwdErr','两次密码不一致');return;}
+    var self=this;
+    this.fetchPermissions(function(perm){
+      if(!perm||!perm.users){self._showErr('forcePwdErr','无法获取权限数据');return;}
+      var user=perm.users.find(function(u){return u.name===self.userName;});
+      if(!user){self._showErr('forcePwdErr','用户不存在');return;}
+      user.pwdHash=self.hashPassword(pwd);
+      user.initialPwd=false;
+      user.active=true;
+      self.savePermissions(perm,function(err){
+        if(err){self._showErr('forcePwdErr','保存失败: '+err.message);return;}
+        self.permissions=perm;
+        localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
+        document.getElementById('changePwdModal').classList.remove('show');
+        showToast('✅ 密码修改成功');
+        self._enterApp();
+      });
+    });
+  },
+
+  _showForceChangePwd:function(){
+    document.getElementById('forceNewPwd').value='';
+    document.getElementById('forceNewPwd2').value='';
+    this._hideErr('forcePwdErr');
+    document.getElementById('changePwdModal').classList.add('show');
   },
 
   _showErr:function(id,msg){
@@ -943,27 +949,10 @@ var AUTH={
     document.getElementById('authScreen').classList.remove('hidden');
     document.getElementById('menuAuthMgmt').style.display='none';
     document.getElementById('menuLogout').style.display='none';
-    // Reset form state
-    document.getElementById('authApplyBtn').textContent='提交申请';
-    document.getElementById('authApplyBtn').disabled=false;
-    document.getElementById('authCodeArea').style.display='none';
-    document.getElementById('authUserKey').value='';
-    this._hideErr('authApplyErr');
+    document.getElementById('authUserPwd').value='';
+    this._hideErr('authUserErr');
     this._hideErr('authAdminErr');
     this._hideErr('authSetupErr');
-    this._hideErr('authWaitErr');
-    // If has pending app code, show wait pane
-    if(this.session==='pending'&&this._appCode){
-      this._showWaitPane();
-    }
-  },
-
-  _showWaitPane:function(){
-    document.getElementById('authTabApply').classList.remove('on');
-    document.getElementById('authTabAdmin').classList.remove('on');
-    document.getElementById('authPaneApply').classList.remove('on');
-    document.getElementById('authPaneAdmin').classList.remove('on');
-    document.getElementById('authPaneWait').classList.add('on');
   },
 
   _enterApp:function(){
@@ -974,7 +963,6 @@ var AUTH={
       document.getElementById('menuAuthMgmt').style.display='none';
     }
     document.getElementById('menuLogout').style.display='';
-    // Init app
     loadAllPhotosDB(function(ph){
       D.photos=ph||{};
       init();
@@ -983,13 +971,17 @@ var AUTH={
 
   _renderUserList:function(){
     var list=document.getElementById('adminUserList');
-    if(!this.permissions||!this.permissions.approved||!this.permissions.approved.length){
-      list.innerHTML='<div style="color:var(--g400);font-size:13px;text-align:center;padding:12px">暂无授权用户</div>';
+    if(!this.permissions||!this.permissions.users||!this.permissions.users.length){
+      list.innerHTML='<div style="color:var(--g400);font-size:13px;text-align:center;padding:12px">暂无用户</div>';
       return;
     }
     var html='';
-    this.permissions.approved.forEach(function(u){
-      html+='<div class="admin-user-item"><div><div class="admin-user-name">'+u.name+'</div><div class="admin-user-id">密钥: '+(u.key||'无')+'</div></div><button class="admin-revoke-btn" onclick="AUTH.revokeUser(\''+u.name+'\')">撤销</button></div>';
+    this.permissions.users.forEach(function(u){
+      var status='';
+      if(u.active===false)status=' (已停用)';
+      else if(AUTH.isUserExpired(u))status=' (密码已过期)';
+      else if(u.initialPwd)status=' (待改密)';
+      html+='<div class="admin-user-item"><div><div class="admin-user-name">'+u.name+status+'</div></div><button class="admin-revoke-btn" onclick="AUTH.resetUserPwd(\''+u.name+'\')">重置密码</button> <button class="admin-revoke-btn" onclick="AUTH.revokeUser(\''+u.name+'\')">删除</button></div>';
     });
     list.innerHTML=html;
   },
@@ -999,19 +991,16 @@ var AUTH={
     this.init();
     this.fetchPermissions(function(perm){
       if(!perm){
-        // Fetch failed - use cached session if available
         if(self.session==='admin'||self.session==='user'){
           self._enterApp();
           return;
         }
-        // No session, show auth screen with retry
         self.permissions=null;
         self._showAuthScreen();
-        self._showErr('authApplyErr','无法连接服务器，请检查网络后重试');
+        self._showErr('authUserErr','无法连接服务器，请检查网络后重试');
         return;
       }
       if(perm.notFound){
-        // First time setup - show admin setup form
         self.permissions=null;
         document.getElementById('authAdminSetup').style.display='block';
         document.getElementById('authAdminLogin').style.display='none';
@@ -1022,30 +1011,24 @@ var AUTH={
       self.permissions=perm;
       document.getElementById('authAdminSetup').style.display='none';
       document.getElementById('authAdminLogin').style.display='block';
-      // Auto-login: if this device is already approved, enter app directly
-      if(self.checkAccess(perm)){
-        self.login('user',self.userName||self._findApprovedName(perm)||'用户');
-        self._enterApp();
-      }else if(self.session==='admin'){
-        self._enterApp();
-      }else if(self.session==='pending'){
-        self._showAuthScreen();
-        self._showWaitPane();
-      }else{
-        self._showAuthScreen();
+      // Auto-login: verify stored credentials
+      if(self.session==='user'&&self.userName){
+        var storedPwd=localStorage.getItem(self.LS_PREFIX+'user_pwd');
+        if(storedPwd){
+          var user=self.findUser(perm,self.userName);
+          if(user&&self.verifyUserPassword(storedPwd,user)&&!self.isUserExpired(user)){
+            if(user.initialPwd){self._showForceChangePwd();}
+            else{self._enterApp();}
+            return;
+          }
+        }
       }
+      if(self.session==='admin'){
+        self._enterApp();
+        return;
+      }
+      self._showAuthScreen();
     });
-  },
-
-  _findApprovedName:function(perm){
-    if(!perm||!perm.approved)return '';
-    // Match by stored userName first, then by deviceId
-    if(this.userName){
-      var u=perm.approved.find(function(x){return x.name===AUTH.userName;});
-      if(u)return u.name;
-    }
-    var u2=perm.approved.find(function(x){return x.deviceId===AUTH.deviceId;});
-    return u2?u2.name:'';
   }
 };
 
