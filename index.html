@@ -646,6 +646,7 @@ var AUTH={
     var url=this.GH_PAGES_URL+'?t='+Date.now();
     var xhr=new XMLHttpRequest();
     xhr.open('GET',url,true);
+    xhr.timeout=10000;
     xhr.onload=function(){
       if(xhr.status===200){
         try{cb(JSON.parse(xhr.responseText));}catch(e){cb(null);}
@@ -653,6 +654,7 @@ var AUTH={
       else{cb(null);}
     };
     xhr.onerror=function(){cb(null);};
+    xhr.ontimeout=function(){cb(null);};
     xhr.send();
   },
 
@@ -961,7 +963,19 @@ var AUTH={
     var self=this;
     this.init();
     this.fetchPermissions(function(perm){
-      if(!perm||perm.notFound){
+      if(!perm){
+        // Fetch failed - use cached session if available
+        if(self.session==='admin'||self.session==='user'){
+          self._enterApp();
+          return;
+        }
+        // No session, show auth screen with retry
+        self.permissions=null;
+        self._showAuthScreen();
+        self._showErr('authApplyErr','无法连接服务器，请检查网络后重试');
+        return;
+      }
+      if(perm.notFound){
         // First time setup - show admin setup form
         self.permissions=null;
         document.getElementById('authAdminSetup').style.display='block';
