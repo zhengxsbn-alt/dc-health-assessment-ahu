@@ -651,6 +651,31 @@ var AUTH={
   permissions:null,
 
   fetchPermissions:function(cb){
+    var self=this;
+    var token=localStorage.getItem('gh_token');
+    var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_PATH+'?t='+Date.now();
+    var xhr=new XMLHttpRequest();
+    xhr.open('GET',apiUrl,true);
+    xhr.timeout=10000;
+    if(token)xhr.setRequestHeader('Authorization','token '+token);
+    xhr.setRequestHeader('Accept','application/vnd.github.v3+json');
+    xhr.onload=function(){
+      if(xhr.status===200){
+        try{
+          var resp=JSON.parse(xhr.responseText);
+          var content=resp.content.replace(/[\s\n]/g,'');
+          var perm=JSON.parse(decodeURIComponent(escape(atob(content))));
+          cb(perm);
+        }catch(e){cb(null);}
+      }else if(xhr.status===404){cb({notFound:true});}
+      else{self._fetchPermissionsCDN(cb);}
+    };
+    xhr.onerror=function(){self._fetchPermissionsCDN(cb);};
+    xhr.ontimeout=function(){self._fetchPermissionsCDN(cb);};
+    xhr.send();
+  },
+
+  _fetchPermissionsCDN:function(cb){
     var url=this.GH_PAGES_URL+'?t='+Date.now();
     var xhr=new XMLHttpRequest();
     xhr.open('GET',url,true);
