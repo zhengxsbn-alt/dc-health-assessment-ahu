@@ -693,7 +693,9 @@ var AUTH={
 
   checkAccess:function(perm){
     if(!perm||!perm.approved)return false;
-    return perm.approved.some(function(u){return u.deviceId===AUTH.deviceId;});
+    var name=this.userName;
+    if(!name)return perm.approved.some(function(u){return u.deviceId===AUTH.deviceId;});
+    return perm.approved.some(function(u){return u.name===name;});
   },
 
   verifyAdminPassword:function(password,perm){
@@ -754,6 +756,15 @@ var AUTH={
   submitApply:function(){
     var name=document.getElementById('authName').value.trim();
     if(!name){this._showErr('authApplyErr','请输入姓名');return;}
+    // If name already approved, log in directly
+    if(this.permissions&&this.permissions.approved){
+      var found=this.permissions.approved.some(function(u){return u.name===name;});
+      if(found){
+        this.login('user',name);
+        this._enterApp();
+        return;
+      }
+    }
     var code=this.generateAppCode(name);
     this._appCode=code;
     localStorage.setItem(this.LS_PREFIX+'app_code',code);
@@ -1004,8 +1015,13 @@ var AUTH={
 
   _findApprovedName:function(perm){
     if(!perm||!perm.approved)return '';
-    var u=perm.approved.find(function(x){return x.deviceId===AUTH.deviceId;});
-    return u?u.name:'';
+    // Match by stored userName first, then by deviceId
+    if(this.userName){
+      var u=perm.approved.find(function(x){return x.name===AUTH.userName;});
+      if(u)return u.name;
+    }
+    var u2=perm.approved.find(function(x){return x.deviceId===AUTH.deviceId;});
+    return u2?u2.name:'';
   }
 };
 
