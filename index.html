@@ -814,8 +814,8 @@ var AUTH={
     if(this.isUserExpired(user)){this._showErr('authUserErr','初始密码已过期，请联系管理员重置');return;}
     this.login('user',name);
     localStorage.setItem(this.LS_PREFIX+'user_pwd',pwd);
+    this._enterApp();
     if(user.initialPwd){this._showForceChangePwd();}
-    else{this._enterApp();}
   },
 
   adminLogin:function(){
