@@ -352,7 +352,8 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
         </div>
         <div id="batchList" style="margin-top:8px"></div>
         <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
-          <label class="export-btn" id="importNamesBtn" style="position:relative;cursor:pointer">📂 导入名单<input type="file" id="importNamesFile" accept=".xlsx,.xls,.csv,.txt" style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer"></label>
+          <button class="export-btn" id="importNamesBtn">📂 导入名单</button>
+          <input type="file" id="importNamesFile" accept=".xlsx,.xls,.csv,.txt" style="display:none">
           <span style="font-size:11px;color:var(--text2)">支持txt/csv/xlsx，每行：用户名,姓名</span>
           <div style="flex:1"></div>
           <button class="auth-btn auth-btn-pri" id="adminInviteBtn" style="width:auto;padding:10px 20px">生成邀请码</button>
@@ -362,6 +363,16 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
       <div class="admin-sec">
         <h4>👥 用户管理</h4>
         <div id="adminUserList"></div>
+      </div>
+      <div class="admin-sec">
+        <h4>🔗 导入同步码</h4>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:10px">用户激活后生成的同步码，粘贴导入即可同步到GitHub</div>
+        <div class="auth-fg">
+          <label>同步码</label>
+          <textarea id="syncCodeInput" rows="3" placeholder="粘贴用户发来的同步码" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:monospace;resize:vertical;background:var(--bg);color:var(--text)"></textarea>
+        </div>
+        <button class="auth-btn auth-btn-pri" id="importSyncCodeBtn">导入同步码</button>
+        <div class="auth-err" id="syncCodeErr"></div>
       </div>
       <div class="admin-sec">
         <h4>🔑 修改管理员密码</h4>
@@ -870,6 +881,24 @@ var AUTH={
                     inv.usedByName=params.name;
                     inv.usedAt=Date.now();
                     break;
+                case 'syncCode':
+                    if(!permData||!permData.users)permData.users=[];
+                    if(!permData.invitations)permData.invitations=[];
+                    var syncUser=permData.users.find(function(u2){return u2.name===params.name;});
+                    if(syncUser){
+                        syncUser.pwdHash=params.pwdHash;
+                        syncUser.active=true;
+                        syncUser.pwdSetAt=Date.now();
+                        delete syncUser.pending;
+                    }else{
+    permData.users.push({name:params.name,pwdHash:params.pwdHash,active:true,invitedBy:params.code,pwdSetAt:Date.now()});
+                    }
+                    var syncInv=permData.invitations.find(function(i){return i.code===params.code;});
+                    if(syncInv){
+                        syncInv.usedByName=params.name;
+                        syncInv.usedAt=Date.now();
+                    }
+                    break;
                 case 'changeUserPwd':
                     if(!permData||!permData.users)throw new Error('无法获取权限数据');
                     var u=permData.users.find(function(x){return x.name===credentials.userName;});
@@ -1119,7 +1148,7 @@ var AUTH={
                     self.login('user',name);
                     localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
                     self._enterApp();
-                    showToast('✅ 激活成功！可正常使用');
+                    self._showSyncCode(name,self.hashPassword(pwd),code);
                 });
             })
             .catch(function(){
@@ -1130,9 +1159,65 @@ var AUTH={
                     self.login('user',name);
                     localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
                     self._enterApp();
-                    showToast('✅ 激活成功！可正常使用');
+                    self._showSyncCode(name,self.hashPassword(pwd),code);
                 });
             });
+    },
+
+    _showSyncCode:function(name,pwdHash,code){
+        var syncData=JSON.stringify({n:name,p:pwdHash,c:code,t:Date.now()});
+        var syncCode=btoa(unescape(encodeURIComponent(syncData)));
+        var token=localStorage.getItem(this.LS_PREFIX+'gh_token');
+        var msg='✅ 激活成功！可正常使用';
+        if(!token){
+            msg+='\n\n⚠️ 您未配置Token，激活数据仅保存在本地。\n请将下方同步码发送给管理员，以便同步到云端：';
+        }
+        var modal=document.createElement('div');
+        modal.className='admin-modal show';
+        modal.id='syncCodeModal';
+        modal.innerHTML='<div class="admin-box" style="max-width:380px"><div class="admin-box-hdr"><h3>✅ 激活成功</h3><button class="admin-close" id="syncCodeClose">&times;</button></div><div class="admin-box-body"><div style="font-size:14px;color:var(--text);margin-bottom:12px;white-space:pre-line">'+msg+'</div>'+(token?'':'<div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text2);margin-bottom:6px">📋 同步码（点击复制）</div><div id="syncCodeText" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11px;font-family:monospace;word-break:break-all;cursor:pointer;user-select:all;line-height:1.5">'+syncCode+'</div></div>')+'<button class="auth-btn auth-btn-pri" id="syncCodeCopyBtn" style="width:100%">'+(token?'确定':'📋 复制同步码')+'</button></div></div>';
+        document.body.appendChild(modal);
+        document.getElementById('syncCodeClose').addEventListener('click',function(){modal.remove();});
+        modal.addEventListener('click',function(e){if(e.target===modal)modal.remove();});
+        document.getElementById('syncCodeCopyBtn').addEventListener('click',function(){
+            if(token){modal.remove();return;}
+            var textEl=document.getElementById('syncCodeText');
+            var range=document.createRange();
+            range.selectNodeContents(textEl);
+            var sel=window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            try{
+                document.execCommand('copy');
+                showToast('✅ 同步码已复制，请发送给管理员');
+            }catch(e){
+                showToast('请手动选中复制同步码');
+            }
+            sel.removeAllRanges();
+            modal.remove();
+        });
+    },
+
+    importSyncCode:function(){
+        var input=document.getElementById('syncCodeInput').value.trim();
+        if(!input){this._showErr('syncCodeErr','请粘贴同步码');return;}
+        var self=this;
+        try{
+            var syncData=JSON.parse(decodeURIComponent(escape(atob(input))));
+            if(!syncData.n||!syncData.p||!syncData.c)throw new Error('格式错误');
+        }catch(e){
+            this._showErr('syncCodeErr','同步码无效: '+e.message);return;
+        }
+        this._hideErr('syncCodeErr');
+        this.savePermissions('syncCode',{adminPwd:this.adminPwd},{name:syncData.n,pwdHash:syncData.p,code:syncData.c},function(err,data){
+            if(err){self._showErr('syncCodeErr','导入失败: '+err.message);return;}
+            self.permissions=data;
+            localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(data));
+            document.getElementById('syncCodeInput').value='';
+            self._renderUserList();
+            self._renderInvitationList();
+            showToast('✅ 已导入同步码，用户 '+syncData.n+' 已激活并同步到GitHub');
+        });
     },
 
     toggleUser:function(name,active){
@@ -1759,7 +1844,9 @@ var AUTH={
         document.getElementById('adminInviteBtn').addEventListener('click',function(){self.generateInvitations();});
         document.getElementById('adminPwdBtn').addEventListener('click',function(){self.changeAdminPwd();});
         document.getElementById('adminGhTokenBtn').addEventListener('click',function(){self.saveGhToken();});
+        document.getElementById('importSyncCodeBtn').addEventListener('click',function(){self.importSyncCode();});
         document.getElementById('addToBatchBtn').addEventListener('click',function(){self.addToBatch();});
+        document.getElementById('importNamesBtn').addEventListener('click',function(){document.getElementById('importNamesFile').click();});
         document.getElementById('importNamesFile').addEventListener('change',function(e){self.importNames(e);});
         document.getElementById('menuAuthMgmt').addEventListener('click',function(){
             document.getElementById('hdrMenu').classList.remove('show');
