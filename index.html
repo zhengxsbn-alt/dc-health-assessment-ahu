@@ -13,8 +13,9 @@
 <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-:root{--pri:#16A34A;--pri-l:#22C55E;--pri-d:#15803D;--pri-bg:#F0FDF4;--ok:#10B981;--warn:#F59E0B;--err:#EF4444;--g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;--g300:#D1D5DB;--g400:#9CA3AF;--g500:#6B7280;--g600:#4B5563;--g700:#374151;--g800:#1F2937;--r:10px;--rs:6px;--sh:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);--shm:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06)}
+:root{--pri:#16A34A;--pri-l:#22C55E;--pri-d:#15803D;--pri-bg:#F0FDF4;--ok:#10B981;--warn:#F59E0B;--err:#EF4444;--g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;--g300:#D1D5DB;--g400:#9CA3AF;--g500:#6B7280;--g600:#4B5563;--g700:#374151;--g800:#1F2937;--r:10px;--rs:6px;--sh:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);--shm:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06);--primary:var(--pri);--primary-light:var(--pri-l);--primary-dark:var(--pri-d);--primary-bg:var(--pri-bg);--bg:var(--g50);--card:#fff;--text:var(--g800);--text2:var(--g500);--border:var(--g200);--danger:var(--err);--success:var(--ok);--radius:var(--r)}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;color:var(--g800);background:var(--g50);-webkit-font-smoothing:antialiased;padding-bottom:68px;overflow-x:hidden}
 .hdr{position:sticky;top:0;z-index:100;background:var(--pri);color:#fff;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shm)}
@@ -165,50 +166,60 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
 .voice-target{border:2px solid #F97316 !important;background:#FFF7ED !important;box-shadow:0 0 0 3px rgba(249,115,22,.25);animation:voiceTargetPulse 1.5s infinite}
 @keyframes voiceTargetPulse{0%,100%{box-shadow:0 0 0 3px rgba(249,115,22,.25)}50%{box-shadow:0 0 0 6px rgba(249,115,22,.1)}}
 /* Auth Screen */
-.auth-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:var(--g50);display:flex;align-items:center;justify-content:center;overflow-y:auto}
+.auth-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow-y:auto}
 .auth-overlay.hidden{display:none}
-.auth-card{width:90%;max-width:380px;background:#fff;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.12);overflow:hidden;margin:20px 0}
-.auth-header{text-align:center;padding:28px 20px 16px;background:linear-gradient(135deg,var(--pri),var(--pri-l));color:#fff}
+.auth-card{width:90%;max-width:380px;background:var(--card);border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.12);overflow:hidden;margin:20px 0}
+.auth-header{text-align:center;padding:28px 20px 16px;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff}
 .auth-header h2{font-size:20px;font-weight:700;margin-bottom:4px}
 .auth-header p{font-size:13px;opacity:.85}
-.auth-tabs{display:flex;border-bottom:2px solid var(--g100)}
-.auth-tab{flex:1;padding:12px 0;text-align:center;font-size:14px;font-weight:600;color:var(--g500);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
-.auth-tab.on{color:var(--pri);border-bottom-color:var(--pri)}
+.auth-tabs{display:flex;border-bottom:2px solid var(--border)}
+.auth-tab{flex:1;padding:12px 0;text-align:center;font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.auth-tab.on{color:var(--primary);border-bottom-color:var(--primary)}
 .auth-body{padding:20px}
 .auth-pane{display:none}
 .auth-pane.on{display:block}
 .auth-fg{margin-bottom:14px}
-.auth-fg label{display:block;font-size:13px;font-weight:500;color:var(--g600);margin-bottom:4px}
-.auth-fg input{width:100%;padding:10px 12px;border:1px solid var(--g300);border-radius:8px;font-size:14px;outline:none;transition:border-color .2s}
-.auth-fg input:focus{border-color:var(--pri)}
+.auth-fg label{display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:4px}
+.auth-fg input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;transition:border-color .2s}
+.auth-fg input:focus{border-color:var(--primary)}
+.pwd-wrap{position:relative;display:flex;align-items:center}
+.pwd-wrap input{padding-right:40px!important}
+.pwd-toggle{position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--text2);padding:2px 4px;line-height:1}
+.pwd-toggle:hover{color:var(--text)}
 .auth-btn{width:100%;padding:12px;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .15s}
 .auth-btn:active{transform:scale(.97)}
-.auth-btn-pri{background:var(--pri);color:#fff}
+.auth-btn-pri{background:var(--primary);color:#fff}
 .auth-btn-pri:disabled{opacity:.5;cursor:not-allowed}
-.auth-code-box{background:var(--g50);border:1px dashed var(--g300);border-radius:8px;padding:12px;font-size:12px;word-break:break-all;color:var(--g700);margin-top:10px;position:relative}
-.auth-code-box .copy-btn{position:absolute;top:8px;right:8px;background:var(--pri);color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer}
-.auth-wait{text-align:center;padding:20px 0;color:var(--g500);font-size:14px}
-.auth-wait .spinner{display:inline-block;width:24px;height:24px;border:3px solid var(--g200);border-top-color:var(--pri);border-radius:50%;animation:authSpin 1s linear infinite;margin-bottom:8px}
+.auth-code-box{background:var(--bg);border:1px dashed var(--border);border-radius:8px;padding:12px;font-size:12px;word-break:break-all;color:var(--text);margin-top:10px;position:relative}
+.auth-code-box .copy-btn{position:absolute;top:8px;right:8px;background:var(--primary);color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer}
+.auth-wait{text-align:center;padding:20px 0;color:var(--text2);font-size:14px}
+.auth-wait .spinner{display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:authSpin 1s linear infinite;margin-bottom:8px}
 @keyframes authSpin{to{transform:rotate(360deg)}}
-.auth-err{color:var(--err);font-size:13px;margin-top:8px;display:none}
+.auth-err{color:var(--danger);font-size:13px;margin-top:8px;display:none}
 .auth-err.show{display:block}
 /* Admin Panel Modal */
 .admin-modal{position:fixed;top:0;left:0;right:0;bottom:0;z-index:5000;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
 .admin-modal.show{display:flex}
-.admin-box{width:92%;max-width:420px;background:#fff;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.2);max-height:80vh;overflow-y:auto}
-.admin-box-hdr{padding:16px 20px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between}
-.admin-box-hdr h3{font-size:16px;font-weight:600;color:var(--g800)}
-.admin-close{background:none;border:none;font-size:22px;color:var(--g500);cursor:pointer;padding:4px}
-.admin-box-body{padding:20px}
-.admin-sec{margin-bottom:20px}
-.admin-sec h4{font-size:14px;font-weight:600;color:var(--g700);margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.admin-user-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--g50);border-radius:8px;margin-bottom:6px}
-.admin-user-name{font-size:14px;color:var(--g800)}
-.admin-user-id{font-size:11px;color:var(--g400)}
-.admin-revoke-btn{background:none;border:1px solid var(--err);color:var(--err);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer}
-.admin-revoke-btn:active{background:var(--err);color:#fff}
-.admin-toggle-btn{background:none;border:1px solid var(--pri);color:var(--pri);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer}
-.admin-toggle-btn:active{background:var(--pri);color:#fff}
+.admin-box{width:92%;max-width:420px;background:var(--card);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.2);max-height:80vh;overflow-y:auto}
+.admin-box-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--card);z-index:1}
+.admin-box-hdr h3{font-size:16px;font-weight:600;color:var(--text)}
+.admin-close{background:none;border:none;font-size:22px;color:var(--text2);cursor:pointer;padding:4px;line-height:1}
+.admin-box-body{padding:16px 20px 20px}
+.admin-sec{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.admin-sec:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.admin-sec h4{font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.admin-user-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:8px;margin-bottom:6px;gap:8px}
+.admin-user-name{font-size:14px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis}
+.admin-user-id{font-size:11px;color:var(--text2)}
+.admin-revoke-btn{background:none;border:1px solid var(--danger);color:var(--danger);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.admin-revoke-btn:active{background:var(--danger);color:#fff}
+.admin-toggle-btn{background:none;border:1px solid var(--primary);color:var(--primary);padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.admin-toggle-btn:active{background:var(--primary);color:#fff}
+.batch-item{display:flex;align-items:center;padding:6px 10px;background:var(--primary-bg);border-radius:6px;margin-bottom:4px;gap:6px}
+.batch-item span{flex:1;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis}
+.batch-item button{background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0}
+.export-btn{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.export-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-bg)}
 </style>
 </head>
 <body>
@@ -220,9 +231,9 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
       <p>请登录后使用</p>
     </div>
     <div class="auth-tabs">
-      <button class="auth-tab on" id="authTabUser" onclick="AUTH.switchTab('user')">用户登录</button>
-      <button class="auth-tab" id="authTabAdmin" onclick="AUTH.switchTab('admin')">管理员</button>
-      <button class="auth-tab" id="authTabActivate" onclick="AUTH.switchTab('activate')">激活账号</button>
+      <button class="auth-tab on" id="authTabUser">用户登录</button>
+      <button class="auth-tab" id="authTabAdmin">管理员登录</button>
+      <button class="auth-tab" id="authTabActivate">激活账号</button>
     </div>
     <div class="auth-body">
       <!-- User login pane -->
@@ -235,13 +246,13 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
           <label>密码</label>
           <input type="password" id="authUserPwd" placeholder="请输入密码">
         </div>
-        <button class="auth-btn auth-btn-pri" onclick="AUTH.userLogin()">登录</button>
+        <button class="auth-btn auth-btn-pri" id="authUserLoginBtn">登录</button>
         <div class="auth-err" id="authUserErr"></div>
       </div>
       <!-- Admin login pane -->
       <div class="auth-pane" id="authPaneAdmin">
         <div id="authAdminSetup" style="display:none">
-          <div style="font-size:13px;color:var(--g600);margin-bottom:10px">首次使用，请设置管理员密码：</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:10px">首次使用，请设置管理员密码：</div>
           <div class="auth-fg">
             <label>设置密码</label>
             <input type="password" id="authSetupPwd" placeholder="请设置管理员密码">
@@ -250,7 +261,7 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
             <label>确认密码</label>
             <input type="password" id="authSetupPwd2" placeholder="再次输入密码">
           </div>
-          <button class="auth-btn auth-btn-pri" onclick="AUTH.setupAdmin()">确认设置</button>
+          <button class="auth-btn auth-btn-pri" id="authSetupBtn">确认设置</button>
           <div class="auth-err" id="authSetupErr"></div>
         </div>
         <div id="authAdminLogin">
@@ -258,20 +269,20 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
             <label>管理员密码</label>
             <input type="password" id="authAdminPwd" placeholder="请输入管理员密码">
           </div>
-          <button class="auth-btn auth-btn-pri" onclick="AUTH.adminLogin()">登录</button>
+          <button class="auth-btn auth-btn-pri" id="authAdminLoginBtn">登录</button>
           <div class="auth-err" id="authAdminErr"></div>
         </div>
       </div>
       <!-- Activate pane -->
       <div class="auth-pane" id="authPaneActivate">
-        <div style="font-size:13px;color:var(--g600);margin-bottom:10px">输入邀请码激活账号：</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5">输入邀请码激活账号，用户名将自动显示</div>
         <div class="auth-fg">
           <label>邀请码</label>
-          <input type="text" id="activateCode" placeholder="请输入6位邀请码" autocomplete="off" style="text-transform:uppercase;letter-spacing:2px;font-family:monospace">
+          <input type="text" id="activateCode" placeholder="请输入6位邀请码" autocomplete="off" style="text-transform:uppercase;letter-spacing:3px;font-family:monospace;font-size:18px;text-align:center">
         </div>
         <div class="auth-fg">
           <label>用户名</label>
-          <input type="text" id="activateName" placeholder="设置用户名" autocomplete="off">
+          <input type="text" id="activateName" placeholder="输入邀请码后自动显示" autocomplete="off" readonly style="background:var(--bg);color:var(--text2)">
         </div>
         <div class="auth-fg">
           <label>密码</label>
@@ -281,31 +292,9 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
           <label>确认密码</label>
           <input type="password" id="activatePwd2" placeholder="再次输入密码">
         </div>
-        <button class="auth-btn auth-btn-pri" onclick="AUTH.activateInvitation()">激活</button>
+        <button class="auth-btn auth-btn-pri" id="activateBtn">激活</button>
         <div class="auth-err" id="activateErr"></div>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- Force Change Password Modal -->
-<div class="admin-modal" id="changePwdModal">
-  <div class="admin-box">
-    <div class="admin-box-hdr">
-      <h3>🔑 修改密码</h3>
-    </div>
-    <div class="admin-box-body">
-      <div style="font-size:13px;color:var(--g600);margin-bottom:10px">首次登录需修改初始密码：</div>
-      <div class="auth-fg">
-        <label>新密码</label>
-        <input type="password" id="forceNewPwd" placeholder="请输入新密码（至少4位）">
-      </div>
-      <div class="auth-fg">
-        <label>确认新密码</label>
-        <input type="password" id="forceNewPwd2" placeholder="再次输入新密码">
-      </div>
-      <button class="auth-btn auth-btn-pri" onclick="AUTH.forceChangePwd()">修改密码</button>
-      <div class="auth-err" id="forcePwdErr"></div>
     </div>
   </div>
 </div>
@@ -315,7 +304,7 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
   <div class="admin-box">
     <div class="admin-box-hdr">
       <h3>🔑 修改密码</h3>
-      <button class="admin-close" onclick="AUTH.closeChangePwdModal()">&times;</button>
+      <button class="admin-close" id="userChangePwdClose">&times;</button>
     </div>
     <div class="admin-box-body">
       <div class="auth-fg">
@@ -330,7 +319,7 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
         <label>确认新密码</label>
         <input type="password" id="userNewPwd2" placeholder="再次输入新密码">
       </div>
-      <button class="auth-btn auth-btn-pri" onclick="AUTH.userChangePwd()">修改密码</button>
+      <button class="auth-btn auth-btn-pri" id="userChangePwdBtn">修改密码</button>
       <div class="auth-err" id="userChangePwdErr"></div>
     </div>
   </div>
@@ -341,44 +330,38 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
   <div class="admin-box">
     <div class="admin-box-hdr">
       <h3>👥 权限管理</h3>
-      <button class="admin-close" onclick="AUTH.closeAdminPanel()">&times;</button>
+      <button class="admin-close" id="adminCloseBtn">&times;</button>
     </div>
     <div class="admin-box-body">
       <div class="admin-sec">
-        <h4>🎫 邀请码管理</h4>
-        <div class="auth-fg">
-          <label>生成数量</label>
-          <input type="number" id="inviteCount" value="1" min="1" max="20" onchange="AUTH.updateInviteNameInputs()">
-        </div>
+        <h4>🎫 创建用户</h4>
         <div class="auth-fg">
           <label>有效期（天）</label>
           <input type="number" id="inviteExpiry" value="7" min="1" max="365">
         </div>
-        <div id="inviteNameInputs">
-          <div class="auth-fg"><label>姓名标注 1</label><input type="text" id="inviteName_0" placeholder="可选，如：张三" autocomplete="off"></div>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div class="auth-fg" style="flex:1;margin-bottom:0">
+            <label>用户名</label>
+            <input type="text" id="inviteUserName" placeholder="输入用户名" autocomplete="off">
+          </div>
+          <div class="auth-fg" style="flex:1;margin-bottom:0">
+            <label>姓名标注</label>
+            <input type="text" id="inviteDisplayName" placeholder="如：张三" autocomplete="off">
+          </div>
+          <button class="auth-btn auth-btn-pri" id="addToBatchBtn" style="width:auto;padding:10px 16px;margin-bottom:0;white-space:nowrap">添加</button>
         </div>
-        <button class="auth-btn auth-btn-pri" onclick="AUTH.generateInvitations()">生成邀请码</button>
+        <div id="batchList" style="margin-top:8px"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+          <button class="export-btn" id="importNamesBtn">📂 导入名单</button>
+          <input type="file" id="importNamesFile" accept=".xlsx,.xls,.csv,.txt" style="display:none">
+          <span style="font-size:11px;color:var(--text2)">支持txt/csv/xlsx，每行：用户名,姓名</span>
+          <div style="flex:1"></div>
+          <button class="auth-btn auth-btn-pri" id="adminInviteBtn" style="width:auto;padding:10px 20px">生成邀请码</button>
+        </div>
         <div id="adminInviteList"></div>
       </div>
       <div class="admin-sec">
-        <h4>➕ 创建用户</h4>
-        <div class="auth-fg">
-          <label>用户名</label>
-          <input type="text" id="adminNewName" placeholder="输入用户名" autocomplete="off">
-        </div>
-        <div class="auth-fg">
-          <label>姓名标注</label>
-          <input type="text" id="adminNewDisplayName" placeholder="可选，如：张三" autocomplete="off">
-        </div>
-        <div class="auth-fg">
-          <label>初始密码</label>
-          <input type="password" id="adminNewPwd" placeholder="设置初始密码">
-        </div>
-        <button class="auth-btn auth-btn-pri" onclick="AUTH.createUser()">创建用户</button>
-        <div class="auth-err" id="adminCreateErr"></div>
-      </div>
-      <div class="admin-sec">
-        <h4>👥 用户列表</h4>
+        <h4>👥 用户管理</h4>
         <div id="adminUserList"></div>
       </div>
       <div class="admin-sec">
@@ -391,19 +374,21 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
           <label>新密码</label>
           <input type="password" id="adminNewPwd2" placeholder="输入新密码">
         </div>
-        <button class="auth-btn auth-btn-pri" onclick="AUTH.changeAdminPwd()">修改密码</button>
+        <button class="auth-btn auth-btn-pri" id="adminPwdBtn">修改密码</button>
         <div class="auth-err" id="adminPwdErr"></div>
       </div>
       <div class="admin-sec">
         <h4>⚙️ GitHub 同步配置</h4>
-        <div style="font-size:13px;color:var(--g600);margin-bottom:10px">配置Token后，权限数据将同步到GitHub，实现跨设备管理</div>
-        <div class="auth-fg">
-          <label>GitHub Token</label>
-          <input type="password" id="adminGhToken" placeholder="输入GitHub Personal Access Token">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:10px">配置Token后，权限数据将同步到GitHub，实现跨设备管理</div>
+        <div id="ghTokenStatusArea"></div>
+        <div id="ghTokenInputArea">
+          <div class="auth-fg">
+            <label>GitHub Token</label>
+            <input type="password" id="adminGhToken" placeholder="输入GitHub Personal Access Token">
+          </div>
+          <button class="auth-btn auth-btn-pri" id="adminGhTokenBtn">保存Token</button>
         </div>
-        <button class="auth-btn auth-btn-pri" onclick="AUTH.saveGhToken()">保存Token</button>
         <div class="auth-err" id="ghTokenErr"></div>
-        <div id="ghTokenStatus"></div>
       </div>
     </div>
   </div>
@@ -412,7 +397,7 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
 <div class="hdr">
 <div style="display:flex;align-items:center;min-width:0;flex:1">
   <button class="bk-btn" id="bkBtn" style="display:none" onclick="goBack()">&#8249;</button>
-  <h1 id="hdrT">机房健康度评估</h1>
+  <h1 id="hdrT">机房健康度评估(AHU)</h1>
 </div>
 <div class="hdr-acts">
   <button class="hdr-btn" id="btnCheck" onclick="checkUnfilled()" title="未填写项检查">🔍</button>
@@ -430,7 +415,7 @@ textarea.fi2{min-height:60px;resize:vertical;font-family:inherit}
     <button class="hdr-menu-item" onclick="importJSON();closeHdrMenu()"><span class="mi">📂</span>导入数据(JSON)</button>
     <div class="hdr-menu-divider"></div>
     <button class="hdr-menu-item" id="menuAuthMgmt" onclick="AUTH.openAdminPanel();closeHdrMenu()" style="display:none"><span class="mi">👥</span>权限管理</button>
-    <button class="hdr-menu-item" id="menuChangePwd" onclick="AUTH.showChangePwdModal();closeHdrMenu()" style="display:none"><span class="mi">🔑</span>修改密码</button>
+    <button class="hdr-menu-item" id="menuChangePwd" style="display:none"><span class="mi">🔑</span>修改密码</button>
     <button class="hdr-menu-item" id="menuLogout" onclick="AUTH.doLogout();closeHdrMenu()" style="display:none"><span class="mi">🚪</span>退出登录</button>
     <div class="hdr-menu-divider"></div>
     <button class="hdr-menu-item" onclick="clearAll();closeHdrMenu()" style="color:var(--err)"><span class="mi">🗑️</span>清空数据</button>
@@ -715,718 +700,1206 @@ var D=ld();
 
 // ============ AUTH Module ============
 var AUTH={
-  LS_PREFIX:'auth_ahu_',
-  APP_TITLE:'AHU健康度评估',
-  GH_OWNER:'zhengxsbn-alt',
-  GH_REPO:'dc-health-assessment',
-  GH_FILE:'permission.json',
-  GH_BRANCH:'main',
-  GH_PAGES_URL:'https://zhengxsbn-alt.github.io/dc-health-assessment/permission.json',
-  session:null,
-  userName:null,
-  adminPwd:null,
-  permissions:null,
+    LS_PREFIX:'auth_ahu_',
+    APP_TITLE:'AHU健康度评估',
+    GH_OWNER:'zhengxsbn-alt',
+    GH_REPO:'dc-health-assessment',
+    GH_FILE:'permission.json',
+    GH_BRANCH:'main',
+    GH_PAGES_URL:'https://zhengxsbn-alt.github.io/dc-health-assessment/permission.json',
+    session:null,
+    userName:null,
+    permissions:null,
 
-  fetchPermissions:function(cb){
-    var self=this;
-    var localData=null;
-    try{localData=JSON.parse(localStorage.getItem(this.LS_PREFIX+'permissions'));}catch(e){}
-    fetch(this.GH_PAGES_URL+'?t='+Date.now())
-      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-      .then(function(data){
-        if(localData&&localData.users&&data.users){
-          localData.users.forEach(function(lu){
-            if(!data.users.some(function(cu){return cu.name===lu.name;})){
-              data.users.push(lu);
-            }
-          });
-        }
-        self.permissions=data;
-        localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(data));
-        cb&&cb(data);
-      })
-      .catch(function(){
-        self.permissions=localData;
-        if(!localData){cb&&cb({notFound:true});}
-        else{cb&&cb(localData);}
-      });
-  },
-
-  savePermissions:function(action,credentials,params,cb){
-    var permData=this.permissions;
-    var self=this;
-    try{
-      switch(action){
-        case 'setupAdmin':
-          if(permData)throw new Error('已初始化，请直接登录');
-          permData={adminHash:params.adminHash,users:[],invitations:[],version:3};
-          break;
-        case 'createInvitation':
-          if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
-            throw new Error('管理员密码错误');
-          if(!permData.invitations)permData.invitations=[];
-          permData.invitations=permData.invitations.concat(params.invitations);
-          break;
-        case 'toggleUser':
-          if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
-            throw new Error('管理员密码错误');
-          if(!permData.users)throw new Error('无用户数据');
-          var tu=permData.users.find(function(u){return u.name===params.name;});
-          if(!tu)throw new Error('用户不存在');
-          tu.active=params.active;
-          break;
-        case 'revokeUser':
-          if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
-            throw new Error('管理员密码错误');
-          if(!permData.users)throw new Error('无用户数据');
-          permData.users=permData.users.filter(function(u){return u.name!==params.name;});
-          break;
-        case 'createUser':
-          if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
-            throw new Error('管理员密码错误');
-          if(!permData.users)permData.users=[];
-          if(permData.users.some(function(u){return u.name===params.name;}))throw new Error('用户名已存在');
-          if(permData.revoked&&permData.revoked.some(function(r){return r===params.name;}))throw new Error('该用户名已被删除，不可重复使用');
-          permData.users.push({name:params.name,displayName:params.displayName||'',pwdHash:params.pwdHash,active:true,invitedBy:'',initialPwd:true,pwdSetAt:Date.now()});
-          break;
-        case 'resetUserPwd':
-          if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
-            throw new Error('管理员密码错误');
-          if(!permData.users)throw new Error('无用户数据');
-          var user=permData.users.find(function(u){return u.name===params.name;});
-          if(!user)throw new Error('用户不存在');
-          user.pwdHash=params.pwdHash;
-          user.initialPwd=true;
-          user.pwdSetAt=Date.now();
-          user.active=true;
-          break;
-        case 'changeAdminPwd':
-          if(!permData||!self.verifyAdminPassword(credentials.oldAdminPwd,permData))
-            throw new Error('当前密码错误');
-          permData.adminHash=params.newAdminHash||params.adminHash;
-          break;
-        case 'forceChangePwd':
-          if(!permData||!permData.users)throw new Error('无法获取权限数据');
-          var u=permData.users.find(function(x){return x.name===credentials.userName;});
-          if(!u)throw new Error('用户不存在');
-          if(!self.verifyUserPassword(credentials.userPwd,u))
-            throw new Error('当前密码错误');
-          u.pwdHash=params.newPwdHash||params.pwdHash;
-          u.initialPwd=false;
-          u.active=true;
-          break;
-        case 'activateUser':
-          if(!permData)throw new Error('权限数据未加载');
-          var inv=permData.invitations&&permData.invitations.find(function(i){
-            return i.code===params.code&&i.active!==false;
-          });
-          if(!inv)throw new Error('邀请码无效或已失效');
-          if(inv.expiresAt&&inv.expiresAt<Date.now())throw new Error('邀请码已过期');
-          if(inv.usedByName&&inv.usedByName!==params.name)throw new Error('邀请码已被其他用户使用');
-          if(!permData.users)permData.users=[];
-          if(permData.users.some(function(u2){return u2.name===params.name;}))throw new Error('用户名已存在');
-          if(permData.revoked&&permData.revoked.some(function(r){return r===params.name;}))throw new Error('该用户名已被删除，不可重复使用');
-          permData.users.push({name:params.name,displayName:inv.displayName||'',pwdHash:params.pwdHash,active:true,invitedBy:params.code,pwdSetAt:Date.now()});
-          inv.usedByName=params.name;
-          inv.usedAt=Date.now();
-          break;
-        default:
-          throw new Error('未知操作: '+action);
-      }
-      self.permissions=permData;
-      localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(permData));
-      if(action!=='forceChangePwd'||localStorage.getItem(self.LS_PREFIX+'gh_token')){
-        self._syncToGitHub(function(err){
-          if(err){cb&&cb(new Error('本地保存成功，但云端同步失败: '+err.message));return;}
-          cb&&cb(null,permData);
-        });
-      }else{
-        cb&&cb(null,permData);
-      }
-    }catch(e){
-      cb&&cb(e);
-    }
-  },
-
-  _syncToGitHub:function(cb){
-    var token=localStorage.getItem(this.LS_PREFIX+'gh_token');
-    if(!token){showToast('⚠️ 未配置Token，数据仅保存在本地，其他设备无法同步');cb&&cb(null);return;}
-    var self=this;
-    var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_FILE;
-    fetch(apiUrl,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}})
-      .then(function(r){if(!r.ok)throw new Error('获取文件SHA失败(HTTP '+r.status+')');return r.json();})
-      .then(function(data){
-        var sha=data.sha;
-        var content=btoa(unescape(encodeURIComponent(JSON.stringify(self.permissions,null,2))));
-        return fetch(apiUrl,{
-          method:'PUT',
-          headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
-          body:JSON.stringify({message:'Update permissions - '+new Date().toISOString(),content:content,sha:sha,branch:self.GH_BRANCH})
-        });
-      })
-      .then(function(r){if(!r.ok)throw new Error('更新文件失败(HTTP '+r.status+')');return r.json();})
-      .then(function(){cb&&cb(null);})
-      .catch(function(e){cb&&cb(e);});
-  },
-
-  createUser:function(){
-    var name=document.getElementById('adminNewName').value.trim();
-    var displayName=document.getElementById('adminNewDisplayName').value.trim();
-    var pwd=document.getElementById('adminNewPwd').value;
-    if(!name){this._showErr('adminCreateErr','请输入用户名');return;}
-    if(!pwd){this._showErr('adminCreateErr','请输入初始密码');return;}
-    if(pwd.length<4){this._showErr('adminCreateErr','密码至少4位');return;}
-    var self=this;
-    this.savePermissions('createUser',
-      {adminPwd:this.adminPwd},
-      {name:name,displayName:displayName,pwdHash:this.hashPassword(pwd)},
-      function(err,data){
-        if(err){self._showErr('adminCreateErr','保存失败: '+err.message);return;}
-        self.permissions=data;
-        document.getElementById('adminNewName').value='';
-        document.getElementById('adminNewDisplayName').value='';
-        document.getElementById('adminNewPwd').value='';
-        self._hideErr('adminCreateErr');
-        self._renderUserList();
-        showToast('✅ 已创建用户: '+name);
-      });
-  },
-
-  generateInvitations:function(){
-    var count=parseInt(document.getElementById('inviteCount').value)||1;
-    var expiryDays=parseInt(document.getElementById('inviteExpiry').value)||7;
-    if(count<1)count=1;if(count>20)count=20;
-    var invitations=[];
-    for(var i=0;i<count;i++){
-      var nameInput=document.getElementById('inviteName_'+i);
-      var displayName=nameInput?nameInput.value.trim():'';
-      invitations.push({code:this._generateCode(),displayName:displayName,usedByName:null,usedAt:null,expiresAt:Date.now()+expiryDays*86400000,createdAt:Date.now(),active:true});
-    }
-    var self=this;
-    this.savePermissions('createInvitation',{adminPwd:this.adminPwd},{invitations:invitations},function(err,data){
-      if(err){showToast('❌ 生成失败: '+err.message);return;}
-      self.permissions=data;
-      self._renderInvitationList();
-      showToast('✅ 已生成 '+count+' 个邀请码');
-    });
-  },
-
-  _generateCode:function(){
-    var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    var code='';
-    for(var i=0;i<6;i++){code+=chars.charAt(Math.floor(Math.random()*chars.length));}
-    return code;
-  },
-
-  activateInvitation:function(){
-    var code=document.getElementById('activateCode').value.trim().toUpperCase();
-    var name=document.getElementById('activateName').value.trim();
-    var pwd=document.getElementById('activatePwd').value;
-    var pwd2=document.getElementById('activatePwd2').value;
-    if(!code){this._showErr('activateErr','请输入邀请码');return;}
-    if(!name){this._showErr('activateErr','请输入用户名');return;}
-    if(!pwd){this._showErr('activateErr','请输入密码');return;}
-    if(pwd.length<4){this._showErr('activateErr','密码至少4位');return;}
-    if(pwd!==pwd2){this._showErr('activateErr','两次密码不一致');return;}
-    var self=this;
-    this._hideErr('activateErr');
-    fetch(this.GH_PAGES_URL+'?t='+Date.now())
-      .then(function(r){return r.json();})
-      .then(function(data){
-        if(data.users){
-          var localData=null;
-          try{localData=JSON.parse(localStorage.getItem(self.LS_PREFIX+'permissions'));}catch(e){}
-          if(localData&&localData.users){
-            localData.users.forEach(function(lu){
-              if(!data.users.some(function(cu){return cu.name===lu.name;})){
-                if(!data.revoked||!data.revoked.some(function(r){return r===lu.name;})){
-                  data.users.push(lu);
-                }
-              }
-            });
-          }
-        }
-        self.permissions=data;
-        localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(data));
-        self.savePermissions('activateUser',{},{code:code,name:name,pwdHash:self.hashPassword(pwd)},function(err,data2){
-          if(err){self._showErr('activateErr',err.message);return;}
-          self.permissions=data2;
-          self.login('user',name);
-          localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
-          self._enterApp();
-          showToast('✅ 激活成功！可正常使用');
-        });
-      })
-      .catch(function(){
-        self.savePermissions('activateUser',{},{code:code,name:name,pwdHash:self.hashPassword(pwd)},function(err,data2){
-          if(err){self._showErr('activateErr',err.message);return;}
-          self.permissions=data2;
-          self.login('user',name);
-          localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
-          self._enterApp();
-          showToast('✅ 激活成功！可正常使用');
-        });
-      });
-  },
-
-  toggleUser:function(name,active){
-    var self=this;
-    this.savePermissions('toggleUser',{adminPwd:this.adminPwd},{name:name,active:active},function(err,data){
-      if(err){showToast('❌ 操作失败: '+err.message);return;}
-      self.permissions=data;
-      self._renderUserList();
-      showToast(active?'✅ 已启用 '+name:'✅ 已停用 '+name);
-    });
-  },
-
-  saveGhToken:function(){
-    var token=document.getElementById('adminGhToken').value.trim();
-    if(!token){this._showErr('ghTokenErr','请输入Token');return;}
-    localStorage.setItem(this.LS_PREFIX+'gh_token',token);
-    this._hideErr('ghTokenErr');
-    this._renderGhTokenStatus();
-    showToast('✅ GitHub Token 已保存');
-  },
-
-  _renderGhTokenStatus:function(){
-    var el=document.getElementById('ghTokenStatus');
-    if(!el)return;
-    var token=localStorage.getItem(this.LS_PREFIX+'gh_token');
-    el.innerHTML=token?'<div style="color:var(--pri);font-size:13px">✅ Token 已配置</div>':'<div style="color:var(--err);font-size:13px">⚠️ 未配置Token，无法同步到云端</div>';
-  },
-
-  _renderInvitationList:function(){
-    var list=document.getElementById('adminInviteList');
-    if(!this.permissions||!this.permissions.invitations||!this.permissions.invitations.length){
-      list.innerHTML='<div style="color:var(--g400);font-size:13px;text-align:center;padding:12px">暂无邀请码</div>';
-      return;
-    }
-    var html='';
-    this.permissions.invitations.forEach(function(inv){
-      var expired=inv.expiresAt&&inv.expiresAt<Date.now();
-      var used=!!inv.usedByName;
-      var inactive=inv.active===false;
-      var status='',statusStyle='';
-      if(inactive){status='已失效';statusStyle='color:var(--g400)';}
-      else if(expired){status='已过期';statusStyle='color:var(--err)';}
-      else if(used){status='已激活('+inv.usedByName+')';statusStyle='color:var(--pri)';}
-      else{status='待使用';statusStyle='color:var(--g600)';}
-      var dn=inv.displayName?' <span style="font-size:12px;color:var(--g400)">('+inv.displayName+')</span>':'';
-      var expStr=inv.expiresAt?new Date(inv.expiresAt).toLocaleDateString():'永不过期';
-      html+='<div class="admin-user-item"><div><div class="admin-user-name" style="font-family:monospace;font-size:16px;letter-spacing:2px">'+inv.code+dn+'</div><div style="font-size:11px;color:var(--g400)">有效期至: '+expStr+' <span style="'+statusStyle+'">'+status+'</span></div></div>';
-      if(!inactive&&!used&&!expired){
-        html+='<button class="admin-revoke-btn" onclick="AUTH.revokeInvitation(\''+inv.code+'\')">作废</button>';
-      }
-      html+='</div>';
-    });
-    list.innerHTML=html;
-  },
-
-  revokeInvitation:function(code){
-    if(!this.permissions||!this.permissions.invitations)return;
-    var inv=this.permissions.invitations.find(function(i){return i.code===code;});
-    if(inv)inv.active=false;
-    var self=this;
-    this._syncToGitHub(function(err){
-      if(err){showToast('❌ 同步失败: '+err.message);return;}
-      localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(self.permissions));
-      self._renderInvitationList();
-      showToast('✅ 已作废邀请码: '+code);
-    });
-  },
-
-  updateInviteNameInputs:function(){
-    var count=parseInt(document.getElementById('inviteCount').value)||1;
-    if(count<1)count=1;if(count>20)count=20;
-    var container=document.getElementById('inviteNameInputs');
-    var html='';
-    for(var i=0;i<count;i++){
-      html+='<div class="auth-fg"><label>姓名标注 '+(i+1)+'</label><input type="text" id="inviteName_'+i+'" placeholder="可选，如：张三" autocomplete="off"></div>';
-    }
-    container.innerHTML=html;
-  },
-
-  checkPermissionFromCDN:function(){
-    var self=this;
-    fetch(this.GH_PAGES_URL+'?t='+Date.now())
-      .then(function(r){return r.json();})
-      .then(function(data){
+    fetchPermissions:function(cb){
+        var self=this;
         var localData=null;
-        try{localData=JSON.parse(localStorage.getItem(self.LS_PREFIX+'permissions'));}catch(e){}
-        if(localData&&localData.users&&data.users){
-          localData.users.forEach(function(lu){
-            if(!data.users.some(function(cu){return cu.name===lu.name;})){
-              if(!data.revoked||!data.revoked.some(function(r){return r===lu.name;})){
-                data.users.push(lu);
-              }
+        try{localData=JSON.parse(localStorage.getItem(this.LS_PREFIX+'permissions'));}catch(e){}
+        var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_FILE;
+        var token=localStorage.getItem(this.LS_PREFIX+'gh_token');
+        var apiHeaders={'Accept':'application/vnd.github.v3+json'};
+        if(token) apiHeaders['Authorization']='token '+token;
+        // Fetch from both CDN (fast) and API (fresh), merge results
+        var cdnData=null,apiData=null,done=0;
+        function tryFinish(){
+            done++;
+            if(done<2)return;
+            // Prefer API data over CDN data
+            var data=apiData||cdnData;
+            if(!data){
+                self.permissions=localData;
+                if(!localData){cb&&cb({notFound:true});}
+                else{cb&&cb(localData);}
+                return;
             }
-          });
+            // Merge: if we have both, use API as base and add CDN-only items
+            if(apiData&&cdnData){
+                if(!apiData.invitations)apiData.invitations=[];
+                if(!apiData.users)apiData.users=[];
+                if(cdnData.invitations){
+                    cdnData.invitations.forEach(function(ci){
+                        if(!apiData.invitations.some(function(ai){return ai.code===ci.code;})){
+                            apiData.invitations.push(ci);
+                        }
+                    });
+                }
+                if(cdnData.users){
+                    cdnData.users.forEach(function(cu){
+                        var idx=apiData.users.findIndex(function(au){return au.name===cu.name;});
+                        if(idx===-1){
+                            apiData.users.push(cu);
+                        }else if(cu.pwdHash&&!apiData.users[idx].pwdHash){
+                            apiData.users[idx]=cu;
+                        }
+                    });
+                }
+                data=apiData;
+            }
+            // Merge local data (prefer activated versions)
+            var needPush=false;
+            if(localData){
+                if(!data.invitations)data.invitations=[];
+                if(!data.users)data.users=[];
+                if(localData.invitations){
+                    localData.invitations.forEach(function(li){
+                        var diIdx=data.invitations.findIndex(function(di){return di.code===li.code;});
+                        if(diIdx===-1){
+                            data.invitations.push(li);
+                            needPush=true;
+                        }else if(li.usedByName&&!data.invitations[diIdx].usedByName){
+                            data.invitations[diIdx]=li;
+                            needPush=true;
+                        }
+                    });
+                }
+                if(localData.users){
+                    localData.users.forEach(function(lu){
+                        var idx=data.users.findIndex(function(du){return du.name===lu.name;});
+                        if(idx===-1){
+                            data.users.push(lu);
+                            needPush=true;
+                        }else if(lu.pwdHash&&!data.users[idx].pwdHash){
+                            data.users[idx]=lu;
+                            needPush=true;
+                        }
+                    });
+                }
+            }
+            self.permissions=data;
+            localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(data));
+            if(needPush&&token){
+                self._syncToGitHub(function(){});
+            }
+            cb&&cb(data);
         }
-        self.permissions=data;
-        localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(data));
-        if(self.session==='user'&&self.userName){
-          var isRevoked=data.revoked&&data.revoked.some(function(r){return r===self.userName;});
-          var user=data.users&&data.users.find(function(u){return u.name===self.userName;});
-          if(isRevoked||!user||user.active===false){
-            self.doLogout();
-            showToast('⚠️ 您的账号已被停用或删除');
-          }else if(user.initialPwd){
-            self._showForceChangePwd();
-          }
+        // CDN fetch (fast, may be stale)
+        fetch(this.GH_PAGES_URL+'?t='+Date.now())
+            .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+            .then(function(d){cdnData=d;tryFinish();})
+            .catch(function(){tryFinish();});
+        // API fetch (fresh, bypasses CDN cache)
+        fetch(apiUrl+'?t='+Date.now(),{headers:apiHeaders})
+            .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+            .then(function(fileData){
+                apiData=JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+                tryFinish();
+            })
+            .catch(function(){tryFinish();});
+    },
+
+    savePermissions:function(action,credentials,params,cb){
+        var permData=this.permissions;
+        var self=this;
+        try{
+            switch(action){
+                case 'setupAdmin':
+                    if(permData)throw new Error('已初始化，请直接登录');
+                    permData={adminHash:params.adminHash,users:[],invitations:[],version:4};
+                    break;
+                case 'createInvitation':
+                    if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
+                        throw new Error('管理员密码错误');
+                    if(!permData.invitations)permData.invitations=[];
+                    permData.invitations=permData.invitations.concat(params.invitations);
+                    if(!permData.users)permData.users=[];
+                    params.invitations.forEach(function(inv){
+                        if(inv.userName&&!permData.users.some(function(u){return u.name===inv.userName;})){
+                            permData.users.push({name:inv.userName,displayName:inv.displayName||'',pwdHash:'',active:true,invitedBy:inv.code,pwdSetAt:null,pending:true});
+                        }
+                    });
+                    break;
+                case 'toggleUser':
+                    if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
+                        throw new Error('管理员密码错误');
+                    if(!permData.users)throw new Error('无用户数据');
+                    var tu=permData.users.find(function(u){return u.name===params.name;});
+                    if(!tu)throw new Error('用户不存在');
+                    tu.active=params.active;
+                    break;
+                case 'revokeUser':
+                    if(!permData||!self.verifyAdminPassword(credentials.adminPwd,permData))
+                        throw new Error('管理员密码错误');
+                    if(!permData.users)throw new Error('无用户数据');
+                    permData.users=permData.users.filter(function(u){return u.name!==params.name;});
+                    break;
+                case 'changeAdminPwd':
+                    if(!permData||!self.verifyAdminPassword(credentials.oldAdminPwd,permData))
+                        throw new Error('当前密码错误');
+                    permData.adminHash=params.newAdminHash||params.adminHash;
+                    break;
+                case 'activateUser':
+                    if(!permData)throw new Error('权限数据未加载');
+                    var inv=permData.invitations&&permData.invitations.find(function(i){
+                        return i.code===params.code&&i.active!==false;
+                    });
+                    if(!inv)throw new Error('邀请码无效或已失效');
+                    if(inv.expiresAt&&inv.expiresAt<Date.now())throw new Error('邀请码已过期');
+                    if(inv.userName&&inv.userName!==params.name)throw new Error('邀请码与用户名不匹配');
+                    if(inv.usedByName&&inv.usedByName!==params.name)throw new Error('邀请码已被其他用户使用');
+                    if(!permData.users)permData.users=[];
+                    var existingUser=permData.users.find(function(u2){return u2.name===params.name;});
+                    if(existingUser){
+                        if(existingUser.pwdHash&&!existingUser.pending)throw new Error('用户名已激活');
+                        existingUser.pwdHash=params.pwdHash;
+                        existingUser.active=true;
+                        existingUser.invitedBy=params.code;
+                        existingUser.pwdSetAt=Date.now();
+                        delete existingUser.pending;
+                    }else{
+                        permData.users.push({name:params.name,displayName:inv.displayName||'',pwdHash:params.pwdHash,active:true,invitedBy:params.code,pwdSetAt:Date.now()});
+                    }
+                    inv.usedByName=params.name;
+                    inv.usedAt=Date.now();
+                    break;
+                case 'changeUserPwd':
+                    if(!permData||!permData.users)throw new Error('无法获取权限数据');
+                    var u=permData.users.find(function(x){return x.name===credentials.userName;});
+                    if(!u)throw new Error('用户不存在');
+                    if(!self.verifyUserPassword(credentials.userPwd,u))
+                        throw new Error('当前密码错误');
+                    u.pwdHash=params.newPwdHash||params.pwdHash;
+                    u.active=true;
+                    break;
+                default:
+                    throw new Error('未知操作: '+action);
+            }
+            self.permissions=permData;
+            localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(permData));
+            self._syncToGitHub(function(err){
+                if(err){cb&&cb(new Error('本地保存成功，但云端同步失败: '+err.message));return;}
+                cb&&cb(null,permData);
+            });
+        }catch(e){
+            cb&&cb(e);
         }
-      })
-      .catch(function(){});
-  },
-  startCDNCheck:function(){
-    var self=this;
-    if(this._cdnTimer)clearInterval(this._cdnTimer);
-    this._cdnTimer=setInterval(function(){self.checkPermissionFromCDN();},5*60*1000);
-    document.addEventListener('visibilitychange',function(){
-      if(!document.hidden&&self.session){self.checkPermissionFromCDN();}
-    });
-  },
+    },
 
-  verifyAdminPassword:function(password,perm){
-    if(!perm||!perm.adminHash)return false;
-    var parts=perm.adminHash.split(':');
-    if(parts.length!==3)return false;
-    var hash=CryptoJS.SHA256(parts[1]+password).toString();
-    return hash===parts[2];
-  },
+    _syncToGitHub:function(cb){
+        var token=localStorage.getItem(this.LS_PREFIX+'gh_token');
+        if(!token){showToast('⚠️ 未配置Token，数据仅保存在本地，其他设备无法同步');cb&&cb(null);return;}
+        var self=this;
+        var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_FILE;
+        fetch(apiUrl,{headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json'}})
+            .then(function(r){if(!r.ok)throw new Error('获取文件SHA失败(HTTP '+r.status+')');return r.json();})
+            .then(function(data){
+                var sha=data.sha;
+                var content=btoa(unescape(encodeURIComponent(JSON.stringify(self.permissions,null,2))));
+                return fetch(apiUrl,{
+                    method:'PUT',
+                    headers:{'Authorization':'token '+token,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
+                    body:JSON.stringify({message:'Update permissions - '+new Date().toISOString(),content:content,sha:sha,branch:self.GH_BRANCH})
+                });
+            })
+            .then(function(r){if(!r.ok)throw new Error('更新文件失败(HTTP '+r.status+')');return r.json();})
+            .then(function(){cb&&cb(null);})
+            .catch(function(e){cb&&cb(e);});
+    },
 
-  verifyUserPassword:function(password,user){
-    if(!user||!user.pwdHash)return false;
-    var parts=user.pwdHash.split(':');
-    if(parts.length!==3)return false;
-    var hash=CryptoJS.SHA256(parts[1]+password).toString();
-    return hash===parts[2];
-  },
+    generateInvitations:function(){
+        var expiryDays=parseInt(document.getElementById('inviteExpiry').value)||7;
+        var batchItems=this._batchList;
+        if(!batchItems||!batchItems.length){showToast('❌ 请先添加用户');return;}
+        var invitations=[];
+        for(var i=0;i<batchItems.length;i++){
+            invitations.push({
+                code:this._generateCode(),
+                displayName:batchItems[i].displayName||'',
+                userName:batchItems[i].userName,
+                usedByName:null,
+                usedAt:null,
+                expiresAt:Date.now()+expiryDays*86400000,
+                createdAt:Date.now(),
+                active:true
+            });
+        }
+        var self=this;
+        this.savePermissions('createInvitation',{adminPwd:this.adminPwd},{invitations:invitations},function(err,data){
+            if(err){showToast('❌ 生成失败: '+err.message);return;}
+            self.permissions=data;
+            self._batchList=[];
+            self._renderBatchList();
+            self._renderInvitationList();
+            showToast('✅ 已生成 '+batchItems.length+' 个邀请码');
+        });
+    },
 
-  hashPassword:function(password){
-    var salt=Math.random().toString(36).substr(2,8);
-    var hash=CryptoJS.SHA256(salt+password).toString();
-    return 'sha256:'+salt+':'+hash;
-  },
+    _generateCode:function(){
+        var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        var code='';
+        for(var i=0;i<6;i++){code+=chars.charAt(Math.floor(Math.random()*chars.length));}
+        return code;
+    },
 
-  findUser:function(perm,name){
-    if(!perm||!perm.users)return null;
-    if(perm.revoked&&perm.revoked.some(function(r){return r===name;}))return null;
-    return perm.users.find(function(u){return u.name===name&&u.active!==false;});
-  },
+    _batchList:[],
 
-  init:function(){
-    this.session=localStorage.getItem(this.LS_PREFIX+'session')||'';
-    this.userName=localStorage.getItem(this.LS_PREFIX+'user_name')||'';
-  },
+    addToBatch:function(){
+        var userName=document.getElementById('inviteUserName').value.trim();
+        var displayName=document.getElementById('inviteDisplayName').value.trim();
+        if(!userName){showToast('❌ 请输入用户名');return;}
+        if(this._batchList.some(function(b){return b.userName===userName;})){
+            showToast('❌ 用户名已存在');return;
+        }
+        this._batchList.push({userName:userName,displayName:displayName});
+        document.getElementById('inviteUserName').value='';
+        document.getElementById('inviteDisplayName').value='';
+        this._renderBatchList();
+    },
 
-  login:function(session,name){
-    this.session=session;
-    this.userName=name||'';
-    localStorage.setItem(this.LS_PREFIX+'session',session);
-    localStorage.setItem(this.LS_PREFIX+'user_name',name||'');
-  },
+    removeFromBatch:function(index){
+        this._batchList.splice(index,1);
+        this._renderBatchList();
+    },
 
-  logout:function(){
-    this.session='';
-    this.userName='';
-    localStorage.setItem(this.LS_PREFIX+'session','');
-    localStorage.setItem(this.LS_PREFIX+'user_name','');
-    localStorage.removeItem(this.LS_PREFIX+'user_pwd');
-  },
-
-  switchTab:function(tab){
-    ['user','admin','activate'].forEach(function(t){
-      var tabEl=document.getElementById('authTab'+t.charAt(0).toUpperCase()+t.slice(1));
-      var paneEl=document.getElementById('authPane'+t.charAt(0).toUpperCase()+t.slice(1));
-      if(tabEl)tabEl.classList.toggle('on',t===tab);
-      if(paneEl)paneEl.classList.toggle('on',t===tab);
-    });
-  },
-
-  userLogin:function(){
-    var name=document.getElementById('authName').value.trim();
-    var pwd=document.getElementById('authUserPwd').value;
-    if(!name){this._showErr('authUserErr','请输入用户名');return;}
-    if(!pwd){this._showErr('authUserErr','请输入密码');return;}
-    if(!this.permissions){this._showErr('authUserErr','权限数据未加载，请稍后重试');return;}
-    if(!this.permissions.users||!this.permissions.users.length){this._showErr('authUserErr','暂无用户，请先激活账号');return;}
-    var user=this.findUser(this.permissions,name);
-    if(!user){this._showErr('authUserErr','用户名或密码错误');return;}
-    if(!this.verifyUserPassword(pwd,user)){this._showErr('authUserErr','用户名或密码错误');return;}
-    this.login('user',name);
-    localStorage.setItem(this.LS_PREFIX+'user_pwd',pwd);
-    this._enterApp();
-  },
-
-  adminLogin:function(){
-    var pwd=document.getElementById('authAdminPwd').value;
-    if(!pwd){this._showErr('authAdminErr','请输入密码');return;}
-    if(!this.permissions){this._showErr('authAdminErr','权限数据未加载');return;}
-    if(this.verifyAdminPassword(pwd,this.permissions)){
-      this.adminPwd=pwd;
-      localStorage.setItem(this.LS_PREFIX+'admin_pwd',pwd);
-      this.login('admin','管理员');
-      this._enterApp();
-    }else{
-      this._showErr('authAdminErr','密码错误');
-    }
-  },
-
-  setupAdmin:function(){
-    var pwd=document.getElementById('authSetupPwd').value;
-    var pwd2=document.getElementById('authSetupPwd2').value;
-    if(!pwd){this._showErr('authSetupErr','请设置密码');return;}
-    if(pwd!==pwd2){this._showErr('authSetupErr','两次密码不一致');return;}
-    if(pwd.length<4){this._showErr('authSetupErr','密码至少4位');return;}
-    var self=this;
-    this.savePermissions('setupAdmin',{},{
-      adminHash:this.hashPassword(pwd)
-    },function(err,data){
-      if(err){self._showErr('authSetupErr','保存失败: '+err.message);return;}
-      self.permissions=data;
-      self.adminPwd=pwd;
-      localStorage.setItem(self.LS_PREFIX+'admin_pwd',pwd);
-      self.login('admin','管理员');
-      self._enterApp();
-    });
-  },
-
-  doLogout:function(){
-    this.logout();
-    this._showAuthScreen();
-  },
-
-  openAdminPanel:function(){
-    this._renderInvitationList();
-    this._renderUserList();
-    this._renderGhTokenStatus();
-    document.getElementById('adminModal').classList.add('show');
-  },
-
-  closeAdminPanel:function(){
-    document.getElementById('adminModal').classList.remove('show');
-  },
-
-  revokeUser:function(name){
-    var self=this;
-    this.savePermissions('revokeUser',
-      {adminPwd:this.adminPwd},
-      {name:name},
-      function(err,data){
-        if(err){showToast('❌ 删除失败: '+err.message);return;}
-        self.permissions=data;
-        self._renderUserList();
-        showToast('✅ 已删除用户: '+name);
-      });
-  },
-
-  resetUserPwd:function(name){
-    var newPwd='';
-    var c='abcdefghjkmnpqrstuvwxyz23456789';
-    for(var i=0;i<6;i++)newPwd+=c.charAt(Math.floor(Math.random()*c.length));
-    var self=this;
-    this.savePermissions('resetUserPwd',
-      {adminPwd:this.adminPwd},
-      {name:name,pwdHash:this.hashPassword(newPwd)},
-      function(err,data){
-        if(err){showToast('❌ 重置失败: '+err.message);return;}
-        self.permissions=data;
-        self._renderUserList();
-        showToast('✅ 已重置 '+name+' 密码为: '+newPwd);
-      });
-  },
-
-  changeAdminPwd:function(){
-    var oldPwd=document.getElementById('adminOldPwd').value;
-    var newPwd=document.getElementById('adminNewPwd2').value;
-    if(!oldPwd||!newPwd){this._showErr('adminPwdErr','请填写完整');return;}
-    if(newPwd.length<4){this._showErr('adminPwdErr','新密码至少4位');return;}
-    if(!this.verifyAdminPassword(oldPwd,this.permissions)){this._showErr('adminPwdErr','当前密码错误');return;}
-    var self=this;
-    this.savePermissions('changeAdminPwd',
-      {oldAdminPwd:oldPwd},
-      {newAdminHash:this.hashPassword(newPwd)},
-      function(err,data){
-        if(err){self._showErr('adminPwdErr','保存失败: '+err.message);return;}
-        self.permissions=data;
-        self.adminPwd=newPwd;
-        localStorage.setItem(self.LS_PREFIX+'admin_pwd',newPwd);
-        document.getElementById('adminOldPwd').value='';
-        document.getElementById('adminNewPwd2').value='';
-        self._hideErr('adminPwdErr');
-        showToast('✅ 密码已修改');
-      });
-  },
-
-  forceChangePwd:function(){
-    var pwd=document.getElementById('forceNewPwd').value;
-    var pwd2=document.getElementById('forceNewPwd2').value;
-    if(!pwd){this._showErr('forcePwdErr','请输入新密码');return;}
-    if(pwd.length<4){this._showErr('forcePwdErr','密码至少4位');return;}
-    if(pwd!==pwd2){this._showErr('forcePwdErr','两次密码不一致');return;}
-    var self=this;
-    var userPwd=localStorage.getItem(this.LS_PREFIX+'user_pwd');
-    this.savePermissions('forceChangePwd',
-      {userName:this.userName,userPwd:userPwd},
-      {newPwdHash:this.hashPassword(pwd)},
-      function(err,data){
-        if(err){self._showErr('forcePwdErr','保存失败: '+err.message);return;}
-        self.permissions=data;
-        localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
-        document.getElementById('changePwdModal').classList.remove('show');
-        showToast('✅ 密码修改成功');
-        self._enterApp();
-      });
-  },
-
-  _showForceChangePwd:function(){
-    document.getElementById('forceNewPwd').value='';
-    document.getElementById('forceNewPwd2').value='';
-    this._hideErr('forcePwdErr');
-    document.getElementById('changePwdModal').classList.add('show');
-  },
-
-  showChangePwdModal:function(){
-    document.getElementById('userOldPwd').value='';
-    document.getElementById('userNewPwd').value='';
-    document.getElementById('userNewPwd2').value='';
-    this._hideErr('userChangePwdErr');
-    document.getElementById('userChangePwdModal').classList.add('show');
-  },
-  closeChangePwdModal:function(){
-    document.getElementById('userChangePwdModal').classList.remove('show');
-  },
-  userChangePwd:function(){
-    var oldPwd=document.getElementById('userOldPwd').value;
-    var newPwd=document.getElementById('userNewPwd').value;
-    var newPwd2=document.getElementById('userNewPwd2').value;
-    if(!oldPwd||!newPwd){this._showErr('userChangePwdErr','请填写完整');return;}
-    if(newPwd.length<4){this._showErr('userChangePwdErr','新密码至少4位');return;}
-    if(newPwd!==newPwd2){this._showErr('userChangePwdErr','两次密码不一致');return;}
-    var self=this;
-    var userPwd=localStorage.getItem(this.LS_PREFIX+'user_pwd');
-    if(userPwd!==oldPwd){this._showErr('userChangePwdErr','当前密码错误');return;}
-    this.savePermissions('forceChangePwd',
-      {userName:this.userName,userPwd:userPwd},
-      {newPwdHash:this.hashPassword(newPwd)},
-      function(err,data){
-        if(err){self._showErr('userChangePwdErr','修改失败: '+err.message);return;}
-        self.permissions=data;
-        localStorage.setItem(self.LS_PREFIX+'user_pwd',newPwd);
-        document.getElementById('userChangePwdModal').classList.remove('show');
-        showToast('✅ 密码修改成功');
-      });
-  },
-
-  _showErr:function(id,msg){
-    var el=document.getElementById(id);if(!el)return;
-    el.textContent=msg;el.classList.add('show');
-  },
-
-  _hideErr:function(id){
-    var el=document.getElementById(id);if(!el)return;
-    el.classList.remove('show');
-  },
-
-  _showAuthScreen:function(){
-    document.getElementById('authScreen').classList.remove('hidden');
-    document.getElementById('menuAuthMgmt').style.display='none';
-    document.getElementById('menuLogout').style.display='none';
-    document.getElementById('authUserPwd').value='';
-    this._hideErr('authUserErr');
-    this._hideErr('authAdminErr');
-    this._hideErr('authSetupErr');
-    this._hideErr('activateErr');
-  },
-
-  _enterApp:function(){
-    document.getElementById('authScreen').classList.add('hidden');
-    if(this.session==='admin'){
-      document.getElementById('menuAuthMgmt').style.display='';
-      document.getElementById('menuChangePwd').style.display='none';
-    }else{
-      document.getElementById('menuAuthMgmt').style.display='none';
-      document.getElementById('menuChangePwd').style.display='';
-      var user=this.findUser(this.permissions,this.userName);
-      if(user&&user.initialPwd){
-        this._showForceChangePwd();
-        return;
-      }
-    }
-    document.getElementById('menuLogout').style.display='';
-    this.startCDNCheck();
-    loadAllPhotosDB(function(ph){
-      D.photos=ph||{};
-      init();
-    });
-  },
-
-  _renderUserList:function(){
-    var list=document.getElementById('adminUserList');
-    if(!this.permissions||!this.permissions.users||!this.permissions.users.length){
-      list.innerHTML='<div style="color:var(--g400);font-size:13px;text-align:center;padding:12px">暂无用户</div>';
-      return;
-    }
-    var html='';
-    this.permissions.users.forEach(function(u){
-      var status='',statusStyle='';
-      if(u.active===false){status='已停用';statusStyle='color:var(--err)';}
-      var dn=u.displayName?' <span style="font-size:12px;color:var(--g400)">('+u.displayName+')</span>':'';
-      html+='<div class="admin-user-item"><div><div class="admin-user-name">'+u.name+dn+' <span style="font-size:12px;'+statusStyle+'">'+status+'</span></div></div>';
-      if(u.active===false){
-        html+='<button class="admin-revoke-btn" style="border-color:var(--pri);color:var(--pri)" onclick="AUTH.toggleUser(\''+u.name+'\',true)">启用</button> ';
-      }else{
-        html+='<button class="admin-revoke-btn" onclick="AUTH.toggleUser(\''+u.name+'\',false)">停用</button> ';
-      }
-      html+='<button class="admin-revoke-btn" onclick="AUTH.resetUserPwd(\''+u.name+'\')">重置密码</button> ';
-      html+='<button class="admin-revoke-btn" onclick="AUTH.revokeUser(\''+u.name+'\')">删除</button>';
-      html+='</div>';
-    });
-    list.innerHTML=html;
-  },
-
-  startAuthFlow:function(){
-    var self=this;
-    this.init();
-    this.fetchPermissions(function(perm){
-      if(!perm){
-        if(self.session==='admin'||self.session==='user'){self._enterApp();return;}
-        self.permissions=null;
-        self._showAuthScreen();
-        self._showErr('authUserErr','无法连接服务器，请检查网络后重试');
-        return;
-      }
-      if(perm.notFound){
-        self.permissions=null;
-        document.getElementById('authAdminSetup').style.display='block';
-        document.getElementById('authAdminLogin').style.display='none';
-        self.switchTab('admin');
-        self._showAuthScreen();
-        return;
-      }
-      self.permissions=perm;
-      document.getElementById('authAdminSetup').style.display='none';
-      document.getElementById('authAdminLogin').style.display='block';
-      if(self.session==='user'&&self.userName){
-        var storedPwd=localStorage.getItem(self.LS_PREFIX+'user_pwd');
-        if(storedPwd){
-          var user=self.findUser(perm,self.userName);
-          if(user&&self.verifyUserPassword(storedPwd,user)){
-            self._enterApp();
+    _renderBatchList:function(){
+        var container=document.getElementById('batchList');
+        if(!this._batchList.length){
+            container.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:8px">暂无待生成用户</div>';
             return;
-          }
         }
-      }
-      if(self.session==='admin'){
-        self.adminPwd=localStorage.getItem(self.LS_PREFIX+'admin_pwd')||'';
-        if(self.adminPwd){
-          self._enterApp();return;
+        var html='';
+        for(var i=0;i<this._batchList.length;i++){
+            var b=this._batchList[i];
+            html+='<div class="batch-item"><span>'+b.userName+(b.displayName?' ('+b.displayName+')':'')+'</span><button onclick="AUTH.removeFromBatch('+i+')">&times;</button></div>';
         }
-      }
-      self._showAuthScreen();
-    });
-  }
+        container.innerHTML=html;
+    },
+
+    importNames:function(e){
+        var self=this;
+        var file=e.target.files[0];
+        if(!file)return;
+        var ext=file.name.split('.').pop().toLowerCase();
+        if(ext==='txt'||ext==='csv'){
+            var reader=new FileReader();
+            reader.onload=function(ev){
+                var lines=ev.target.result.split(/[\r\n]+/).filter(function(l){return l.trim();});
+                var added=0;
+                lines.forEach(function(line){
+                    var parts=line.trim().split(/[,\t]/);
+                    var userName=parts[0].trim();
+                    var displayName=parts.length>1?parts[1].trim():'';
+                    if(userName&&!self._batchList.some(function(b){return b.userName===userName;})){
+                        self._batchList.push({userName:userName,displayName:displayName});
+                        added++;
+                    }
+                });
+                self._renderBatchList();
+                showToast('✅ 已导入 '+added+' 个用户名');
+            };
+            reader.readAsText(file);
+        }else if(ext==='xlsx'||ext==='xls'){
+            var reader=new FileReader();
+            reader.onload=function(ev){
+                try{
+                    var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+                    var ws=wb.Sheets[wb.SheetNames[0]];
+                    var data=XLSX.utils.sheet_to_json(ws,{header:1});
+                    var added=0;
+                    data.forEach(function(row){
+                        var userName=String(row[0]||'').trim();
+                        var displayName=String(row[1]||'').trim();
+                        if(userName&&!self._batchList.some(function(b){return b.userName===userName;})){
+                            self._batchList.push({userName:userName,displayName:displayName});
+                            added++;
+                        }
+                    });
+                    self._renderBatchList();
+                    showToast('✅ 已导入 '+added+' 个用户名');
+                }catch(err){showToast('❌ 文件解析失败: '+err.message);}
+            };
+            reader.readAsArrayBuffer(file);
+        }else{
+            showToast('❌ 不支持的文件格式，请使用 .xlsx/.xls/.csv/.txt');
+        }
+        e.target.value='';
+    },
+
+    exportInvitations:function(){
+        if(!this.permissions||!this.permissions.invitations||!this.permissions.invitations.length){
+            showToast('❌ 暂无邀请码可导出');return;
+        }
+        var rows=[['用户名','姓名标注','邀请码','有效期至','状态']];
+        this.permissions.invitations.forEach(function(inv){
+            var expStr=inv.expiresAt?new Date(inv.expiresAt).toLocaleDateString():'永不过期';
+            var status=inv.usedByName?'已激活('+inv.usedByName+')':(inv.active===false?'已失效':(inv.expiresAt&&inv.expiresAt<Date.now()?'已过期':'待使用'));
+            rows.push([inv.userName||'',inv.displayName||'',inv.code,expStr,status]);
+        });
+        var ws=XLSX.utils.aoa_to_sheet(rows);
+        var wb=XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb,ws,'邀请码');
+        XLSX.writeFile(wb,'邀请码列表_'+new Date().toLocaleDateString().replace(/\//g,'-')+'.xlsx');
+        showToast('✅ 已导出邀请码列表');
+    },
+
+    exportUsers:function(){
+        if(!this.permissions||!this.permissions.users||!this.permissions.users.length){
+            showToast('❌ 暂无用户可导出');return;
+        }
+        var rows=[['用户名','姓名标注','状态','创建时间']];
+        this.permissions.users.forEach(function(u){
+            var status=u.active===false?(u.pending?'待激活(已停用)':'已停用'):(u.pending?'待激活':'启用');
+            var created=u.pwdSetAt?new Date(u.pwdSetAt).toLocaleDateString():'';
+            rows.push([u.name,u.displayName||'',status,created]);
+        });
+        var ws=XLSX.utils.aoa_to_sheet(rows);
+        var wb=XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb,ws,'用户列表');
+        XLSX.writeFile(wb,'用户管理列表_'+new Date().toLocaleDateString().replace(/\//g,'-')+'.xlsx');
+        showToast('✅ 已导出用户列表');
+    },
+
+    activateInvitation:function(){
+        var code=document.getElementById('activateCode').value.trim().toUpperCase();
+        var name=document.getElementById('activateName').value.trim();
+        var pwd=document.getElementById('activatePwd').value;
+        var pwd2=document.getElementById('activatePwd2').value;
+        if(!code){this._showErr('activateErr','请输入邀请码');return;}
+        if(!name){this._showErr('activateErr','请输入有效的邀请码以获取用户名');return;}
+        if(!pwd){this._showErr('activateErr','请输入密码');return;}
+        if(pwd.length<4){this._showErr('activateErr','密码至少4位');return;}
+        if(pwd!==pwd2){this._showErr('activateErr','两次密码不一致');return;}
+        var self=this;
+        this._hideErr('activateErr');
+        fetch(this.GH_PAGES_URL+'?t='+Date.now())
+            .then(function(r){return r.json();})
+            .then(function(data){
+                if(data.users||data.invitations){
+                    var localData=null;
+                    try{localData=JSON.parse(localStorage.getItem(self.LS_PREFIX+'permissions'));}catch(e){}
+                    if(localData){
+                        if(!data.invitations)data.invitations=[];
+                        if(!data.users)data.users=[];
+                        if(localData.invitations){
+                            localData.invitations.forEach(function(li){
+                                var ciIdx=data.invitations.findIndex(function(ci){return ci.code===li.code;});
+                                if(ciIdx===-1){
+                                    data.invitations.push(li);
+                                }else if(li.usedByName&&!data.invitations[ciIdx].usedByName){
+                                    data.invitations[ciIdx]=li;
+                                }
+                            });
+                        }
+                        if(localData.users){
+                            localData.users.forEach(function(lu){
+                                var cdnIdx=data.users.findIndex(function(cu){return cu.name===lu.name;});
+                                if(cdnIdx===-1){
+                                    data.users.push(lu);
+                                }else if(lu.pwdHash&&!data.users[cdnIdx].pwdHash){
+                                    data.users[cdnIdx]=lu;
+                                }
+                            });
+                        }
+                    }
+                }
+                self.permissions=data;
+                localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(data));
+                self.savePermissions('activateUser',{},{code:code,name:name,pwdHash:self.hashPassword(pwd)},function(err,data2){
+                    if(err){self._showErr('activateErr',err.message);return;}
+                    self.permissions=data2;
+                    localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(data2));
+                    self.login('user',name);
+                    localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
+                    self._enterApp();
+                    showToast('✅ 激活成功！可正常使用');
+                });
+            })
+            .catch(function(){
+                self.savePermissions('activateUser',{},{code:code,name:name,pwdHash:self.hashPassword(pwd)},function(err,data2){
+                    if(err){self._showErr('activateErr',err.message);return;}
+                    self.permissions=data2;
+                    localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(data2));
+                    self.login('user',name);
+                    localStorage.setItem(self.LS_PREFIX+'user_pwd',pwd);
+                    self._enterApp();
+                    showToast('✅ 激活成功！可正常使用');
+                });
+            });
+    },
+
+    toggleUser:function(name,active){
+        var self=this;
+        this.savePermissions('toggleUser',{adminPwd:this.adminPwd},{name:name,active:active},function(err,data){
+            if(err){showToast('❌ 操作失败: '+err.message);return;}
+            self.permissions=data;
+            self._renderUserList();
+            showToast(active?'✅ 已启用 '+name:'✅ 已停用 '+name);
+        });
+    },
+
+    saveGhToken:function(){
+        var token=document.getElementById('adminGhToken').value.trim();
+        if(!token){this._showErr('ghTokenErr','请输入Token');return;}
+        localStorage.setItem(this.LS_PREFIX+'gh_token',token);
+        this._hideErr('ghTokenErr');
+        this._renderGhTokenStatus();
+        showToast('✅ GitHub Token 已保存');
+    },
+
+    _renderGhTokenStatus:function(){
+        var area=document.getElementById('ghTokenStatusArea');
+        var inputArea=document.getElementById('ghTokenInputArea');
+        if(!area||!inputArea)return;
+        var token=localStorage.getItem(this.LS_PREFIX+'gh_token');
+        if(token){
+            area.innerHTML='<div style="color:var(--success);font-size:13px;margin-bottom:8px">✅ Token 已配置 <a href="javascript:void(0)" id="ghTokenChangeLink" style="color:var(--primary);font-size:12px;margin-left:8px">更换</a> <a href="javascript:void(0)" id="ghTokenDeleteLink" style="color:var(--danger);font-size:12px;margin-left:8px">删除</a></div>';
+            inputArea.style.display='none';
+            area.style.display='';
+            var self=this;
+            var link=document.getElementById('ghTokenChangeLink');
+            if(link){link.addEventListener('click',function(){inputArea.style.display='block';area.style.display='none';});}
+            var delLink=document.getElementById('ghTokenDeleteLink');
+            if(delLink){delLink.addEventListener('click',function(){localStorage.removeItem(self.LS_PREFIX+'gh_token');self._renderGhTokenStatus();showToast('✅ Token 已删除');});}
+        }else{
+            area.innerHTML='';
+            area.style.display='';
+            inputArea.style.display='block';
+        }
+    },
+
+    _renderInvitationList:function(){
+        var list=document.getElementById('adminInviteList');
+        var self=this;
+        if(!this.permissions||!this.permissions.invitations||!this.permissions.invitations.length){
+            list.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:12px">暂无邀请码</div>';
+            return;
+        }
+        var activeInvs=this.permissions.invitations.filter(function(inv){
+            return !inv.usedByName && inv.active!==false && (!inv.expiresAt || inv.expiresAt>Date.now());
+        });
+        if(!activeInvs.length){
+            list.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:12px">暂无可用邀请码</div>';
+            return;
+        }
+        var html='<div style="display:flex;gap:8px;margin-bottom:10px"><button class="export-btn" id="exportInvitationsBtn">📤 导出邀请码</button><button class="export-btn" id="syncGithubBtn">🔄 同步</button><button class="export-btn" id="toggleInviteListBtn">🔽 收起列表</button></div>';
+        html+='<div id="inviteListItems" style="max-height:300px;overflow-y:auto;transition:max-height 0.3s">';
+        activeInvs.forEach(function(inv,idx){
+            var userStr=inv.userName?inv.userName:'';
+            var dn=inv.displayName?' ('+inv.displayName+')':'';
+            var expStr=inv.expiresAt?new Date(inv.expiresAt).toLocaleDateString():'永不过期';
+            html+='<div class="admin-user-item" data-inv-idx="'+idx+'"><div><div class="admin-user-name" style="font-family:monospace;font-size:15px;letter-spacing:1px">'+inv.code+' <span style="font-size:12px;color:var(--text2)">'+userStr+dn+'</span></div><div style="font-size:11px;color:var(--text2)">有效期至: '+expStr+'</div></div>';
+            html+='<button class="admin-revoke-btn" data-revoke-inv="'+inv.code+'">作废</button>';
+            html+='</div>';
+        });
+        html+='</div>';
+        list.innerHTML=html;
+        list.querySelectorAll('[data-revoke-inv]').forEach(function(btn){
+            btn.addEventListener('click',function(){self.revokeInvitation(this.getAttribute('data-revoke-inv'));});
+        });
+        var exportBtn=document.getElementById('exportInvitationsBtn');
+        if(exportBtn){exportBtn.addEventListener('click',function(){self.exportInvitations();});}
+        var syncBtn=document.getElementById('syncGithubBtn');
+        if(syncBtn){syncBtn.addEventListener('click',function(){self.syncFromGitHub();});}
+        var toggleBtn=document.getElementById('toggleInviteListBtn');
+        if(toggleBtn){
+            toggleBtn.addEventListener('click',function(){
+                var items=document.getElementById('inviteListItems');
+                if(items.style.maxHeight!=='0px'){
+                    items.style.maxHeight='0px';
+                    items.style.overflow='hidden';
+                    this.textContent='🔼 展开列表';
+                }else{
+                    items.style.maxHeight='300px';
+                    items.style.overflow='auto';
+                    this.textContent='🔽 收起列表';
+                }
+            });
+        }
+    },
+
+    revokeInvitation:function(code){
+        if(!this.permissions||!this.permissions.invitations)return;
+        var inv=this.permissions.invitations.find(function(i){return i.code===code;});
+        if(!inv)return;
+        inv.active=false;
+        var self=this;
+        if(inv.userName&&this.permissions.users){
+            var pendingUser=this.permissions.users.find(function(u){return u.name===inv.userName&&u.pending;});
+            if(pendingUser) pendingUser.active=false;
+        }
+        localStorage.setItem(this.LS_PREFIX+'permissions',JSON.stringify(this.permissions));
+        this._syncToGitHub(function(err){
+            if(err){showToast('❌ 同步失败: '+err.message);return;}
+            self._renderInvitationList();
+            self._renderUserList();
+            showToast('✅ 已作废邀请码: '+code);
+        });
+    },
+
+    checkPermissionFromCDN:function(){
+        var self=this;
+        var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_FILE;
+        var token=localStorage.getItem(this.LS_PREFIX+'gh_token');
+        var apiHeaders={'Accept':'application/vnd.github.v3+json'};
+        if(token) apiHeaders['Authorization']='token '+token;
+        var cdnData=null,apiData=null,done=0;
+        function tryFinish(){
+            done++;
+            if(done<2)return;
+            var data=apiData||cdnData;
+            if(!data)return;
+            // Merge if both sources available
+            if(apiData&&cdnData){
+                if(!apiData.invitations)apiData.invitations=[];
+                if(!apiData.users)apiData.users=[];
+                if(cdnData.invitations){
+                    cdnData.invitations.forEach(function(ci){
+                        if(!apiData.invitations.some(function(ai){return ai.code===ci.code;})){
+                            apiData.invitations.push(ci);
+                        }
+                    });
+                }
+                if(cdnData.users){
+                    cdnData.users.forEach(function(cu){
+                        var idx=apiData.users.findIndex(function(au){return au.name===cu.name;});
+                        if(idx===-1){
+                            apiData.users.push(cu);
+                        }else if(cu.pwdHash&&!apiData.users[idx].pwdHash){
+                            apiData.users[idx]=cu;
+                        }
+                    });
+                }
+                data=apiData;
+            }
+            // Merge local data
+            var localData=null;
+            try{localData=JSON.parse(localStorage.getItem(self.LS_PREFIX+'permissions'));}catch(e){}
+            if(localData){
+                if(!data.invitations)data.invitations=[];
+                if(!data.users)data.users=[];
+                if(localData.invitations){
+                    localData.invitations.forEach(function(li){
+                        var diIdx=data.invitations.findIndex(function(di){return di.code===li.code;});
+                        if(diIdx===-1){
+                            data.invitations.push(li);
+                        }else if(li.usedByName&&!data.invitations[diIdx].usedByName){
+                            data.invitations[diIdx]=li;
+                        }
+                    });
+                }
+                if(localData.users){
+                    localData.users.forEach(function(lu){
+                        var idx=data.users.findIndex(function(du){return du.name===lu.name;});
+                        if(idx===-1){
+                            data.users.push(lu);
+                        }else if(lu.pwdHash&&!data.users[idx].pwdHash){
+                            data.users[idx]=lu;
+                        }
+                    });
+                }
+            }
+            self.permissions=data;
+            localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(data));
+            if(self.session==='user'&&self.userName){
+                var user=data.users&&data.users.find(function(u){return u.name===self.userName;});
+                if(!user||user.active===false){
+                    self.doLogout();
+                    showToast('⚠️ 您的账号已被停用或删除');
+                }
+            }
+        }
+        fetch(this.GH_PAGES_URL+'?t='+Date.now())
+            .then(function(r){return r.json();})
+            .then(function(d){cdnData=d;tryFinish();})
+            .catch(function(){tryFinish();});
+        fetch(apiUrl+'?t='+Date.now(),{headers:apiHeaders})
+            .then(function(r){if(!r.ok)throw new Error('');return r.json();})
+            .then(function(fileData){
+                apiData=JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+                tryFinish();
+            })
+            .catch(function(){tryFinish();});
+    },
+
+    startCDNCheck:function(){
+        var self=this;
+      if(this._cdnTimer)clearInterval(this._cdnTimer);
+        this._cdnTimer=setInterval(function(){self.checkPermissionFromCDN();},5*60*1000);
+        document.addEventListener('visibilitychange',function(){
+            if(!document.hidden&&self.session){self.checkPermissionFromCDN();}
+        });
+    },
+
+    verifyAdminPassword:function(password,perm){
+        if(!perm||!perm.adminHash)return false;
+        var parts=perm.adminHash.split(':');
+        if(parts.length!==3)return false;
+        var hash=CryptoJS.SHA256(parts[1]+password).toString();
+        return hash===parts[2];
+    },
+
+    verifyUserPassword:function(password,user){
+        if(!user||!user.pwdHash)return false;
+        var parts=user.pwdHash.split(':');
+        if(parts.length!==3)return false;
+        var hash=CryptoJS.SHA256(parts[1]+password).toString();
+        return hash===parts[2];
+    },
+
+    hashPassword:function(password){
+        var salt=Math.random().toString(36).substr(2,8);
+        var hash=CryptoJS.SHA256(salt+password).toString();
+        return 'sha256:'+salt+':'+hash;
+    },
+
+    findUser:function(perm,name){
+        if(!perm||!perm.users)return null;
+        return perm.users.find(function(u){return u.name===name&&u.active!==false&&!u.pending;});
+    },
+
+    init:function(){
+        this.session=localStorage.getItem(this.LS_PREFIX+'session')||'';
+        this.userName=localStorage.getItem(this.LS_PREFIX+'user_name')||'';
+    },
+
+    login:function(session,name){
+        this.session=session;
+        this.userName=name||'';
+        localStorage.setItem(this.LS_PREFIX+'session',session);
+        localStorage.setItem(this.LS_PREFIX+'user_name',name||'');
+    },
+
+    logout:function(){
+        this.session='';
+        this.userName='';
+        localStorage.setItem(this.LS_PREFIX+'session','');
+        localStorage.setItem(this.LS_PREFIX+'user_name','');
+        localStorage.removeItem(this.LS_PREFIX+'user_pwd');
+        localStorage.removeItem(this.LS_PREFIX+'admin_pwd');
+    },
+
+    switchTab:function(tab){
+        ['user','admin','activate'].forEach(function(t){
+            var tabEl=document.getElementById('authTab'+t.charAt(0).toUpperCase()+t.slice(1));
+            var paneEl=document.getElementById('authPane'+t.charAt(0).toUpperCase()+t.slice(1));
+            if(tabEl)tabEl.classList.toggle('on',t===tab);
+            if(paneEl)paneEl.classList.toggle('on',t===tab);
+        });
+    },
+
+    userLogin:function(){
+        var name=document.getElementById('authName').value.trim();
+        var pwd=document.getElementById('authUserPwd').value;
+        if(!name){this._showErr('authUserErr','请输入用户名');return;}
+        if(!pwd){this._showErr('authUserErr','请输入密码');return;}
+        if(!this.permissions){this._showErr('authUserErr','权限数据未加载，请稍后重试');return;}
+        if(!this.permissions.users||!this.permissions.users.length){this._showErr('authUserErr','暂无用户，请先激活账号');return;}
+        var user=this.findUser(this.permissions,name);
+        if(!user){this._showErr('authUserErr','用户名或密码错误');return;}
+        if(!this.verifyUserPassword(pwd,user)){this._showErr('authUserErr','用户名或密码错误');return;}
+        this.login('user',name);
+        localStorage.setItem(this.LS_PREFIX+'user_pwd',pwd);
+        this._enterApp();
+    },
+
+    adminLogin:function(){
+        var pwd=document.getElementById('authAdminPwd').value;
+        if(!pwd){this._showErr('authAdminErr','请输入密码');return;}
+        if(!this.permissions){this._showErr('authAdminErr','权限数据未加载');return;}
+        if(this.verifyAdminPassword(pwd,this.permissions)){
+            this.adminPwd=pwd;
+            localStorage.setItem(this.LS_PREFIX+'admin_pwd',pwd);
+            this.login('admin','管理员');
+            this._enterApp();
+        }else{
+            this._showErr('authAdminErr','密码错误');
+        }
+    },
+
+    setupAdmin:function(){
+        var pwd=document.getElementById('authSetupPwd').value;
+        var pwd2=document.getElementById('authSetupPwd2').value;
+        if(!pwd){this._showErr('authSetupErr','请设置密码');return;}
+        if(pwd!==pwd2){this._showErr('authSetupErr','两次密码不一致');return;}
+        if(pwd.length<4){this._showErr('authSetupErr','密码至少4位');return;}
+        var self=this;
+        this.savePermissions('setupAdmin',{},{
+            adminHash:this.hashPassword(pwd)
+        },function(err,data){
+            if(err){self._showErr('authSetupErr','保存失败: '+err.message);return;}
+            self.permissions=data;
+            self.adminPwd=pwd;
+            localStorage.setItem(self.LS_PREFIX+'admin_pwd',pwd);
+            self.login('admin','管理员');
+            self._enterApp();
+        });
+    },
+
+    doLogout:function(){
+        this.logout();
+        this._showAuthScreen();
+    },
+
+    openAdminPanel:function(){
+        var self=this;
+        document.getElementById('adminModal').classList.add('show');
+        this._renderBatchList();
+        document.getElementById('adminInviteList').innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:8px">⏳ 正在同步最新数据...</div>';
+        document.getElementById('adminUserList').innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:8px">⏳ 正在同步最新数据...</div>';
+        var token=localStorage.getItem(this.LS_PREFIX+'gh_token');
+        var headers={'Accept':'application/vnd.github.v3+json'};
+        if(token) headers['Authorization']='token '+token;
+        var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_FILE;
+        fetch(apiUrl+'?t='+Date.now(),{headers:headers})
+            .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+            .then(function(fileData){
+                var content=JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+                // Merge local data (prefer activated versions)
+                var localData=null;
+                try{localData=JSON.parse(localStorage.getItem(self.LS_PREFIX+'permissions'));}catch(e){}
+                var needPush=false;
+                if(localData){
+                    if(!content.invitations)content.invitations=[];
+                    if(!content.users)content.users=[];
+                    if(localData.invitations){
+                        localData.invitations.forEach(function(li){
+                            var ciIdx=content.invitations.findIndex(function(ci){return ci.code===li.code;});
+                            if(ciIdx===-1){
+                                content.invitations.push(li);
+                                needPush=true;
+                            }else if(li.usedByName&&!content.invitations[ciIdx].usedByName){
+                                content.invitations[ciIdx]=li;
+                                needPush=true;
+                            }
+                        });
+                    }
+                    if(localData.users){
+                        localData.users.forEach(function(lu){
+                            var idx=content.users.findIndex(function(cu){return cu.name===lu.name;});
+                            if(idx===-1){
+                                content.users.push(lu);
+                                needPush=true;
+                            }else if(lu.pwdHash&&!content.users[idx].pwdHash){
+                                content.users[idx]=lu;
+                                needPush=true;
+                            }
+                        });
+                    }
+                }
+                self.permissions=content;
+                localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(content));
+                self._renderInvitationList();
+                self._renderUserList();
+                self._renderGhTokenStatus();
+                if(needPush&&token){
+                  self._syncToGitHub(function(err){
+                        if(!err) showToast('✅ 已同步最新数据并更新GitHub');
+                    });
+                }
+            })
+            .catch(function(e){
+                var msg=e.message||'';
+                if(msg.indexOf('401')!==-1){
+                    localStorage.removeItem(self.LS_PREFIX+'gh_token');
+                    showToast('⚠️ Token无效(401)，已自动清除，请重新配置');
+                }else if(msg.indexOf('403')!==-1) showToast('⚠️ API频率限制，请配置Token或稍后重试，当前显示本地缓存');
+                else if(msg.indexOf('404')!==-1) showToast('⚠️ permission.json不存在，请先初始化');
+                else showToast('⚠️ 同步失败('+msg+')，显示本地缓存数据');
+                self._renderInvitationList();
+                self._renderUserList();
+                self._renderGhTokenStatus();
+            });
+    },
+
+    closeAdminPanel:function(){
+        document.getElementById('adminModal').classList.remove('show');
+    },
+
+    syncFromGitHub:function(){
+        var self=this;
+        showToast('⏳ 正在从GitHub同步...');
+        var token=localStorage.getItem(this.LS_PREFIX+'gh_token');
+        var headers={'Accept':'application/vnd.github.v3+json'};
+        if(token) headers['Authorization']='token '+token;
+        var apiUrl='https://api.github.com/repos/'+this.GH_OWNER+'/'+this.GH_REPO+'/contents/'+this.GH_FILE;
+        fetch(apiUrl+'?t='+Date.now(),{headers:headers})
+            .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+            .then(function(fileData){
+                var sha=fileData.sha;
+                var content=JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+                var localData=null;
+                try{localData=JSON.parse(localStorage.getItem(self.LS_PREFIX+'permissions'));}catch(e){}
+                var needPush=false;
+                if(localData){
+                    if(!content.invitations)content.invitations=[];
+                    if(!content.users)content.users=[];
+                    if(localData.invitations){
+                        localData.invitations.forEach(function(li){
+                            var ciIdx=content.invitations.findIndex(function(ci){return ci.code===li.code;});
+                            if(ciIdx===-1){
+                                content.invitations.push(li);
+                                needPush=true;
+                            }else if(li.usedByName&&!content.invitations[ciIdx].usedByName){
+                                content.invitations[ciIdx]=li;
+                                needPush=true;
+                            }
+                        });
+                    }
+                    if(localData.users){
+                        localData.users.forEach(function(lu){
+                            var idx=content.users.findIndex(function(cu){return cu.name===lu.name;});
+                            if(idx===-1){
+                                content.users.push(lu);
+                                needPush=true;
+                            }else if(lu.pwdHash&&!content.users[idx].pwdHash){
+                                content.users[idx]=lu;
+                                needPush=true;
+                            }
+                        });
+                    }
+                }
+                self.permissions=content;
+                localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(content));
+                self._renderInvitationList();
+                self._renderUserList();
+                if(needPush&&token){
+                    self._syncToGitHub(function(err){
+                        if(err) showToast('✅ 已同步，但回推GitHub失败: '+err.message);
+                        else showToast('✅ 已同步并更新GitHub数据');
+                    });
+                }else{
+                    showToast('✅ 已从GitHub同步最新数据');
+                }
+            })
+            .catch(function(e){
+                var msg=e.message||'';
+                if(msg.indexOf('401')!==-1){
+                    localStorage.removeItem(self.LS_PREFIX+'gh_token');
+                    showToast('⚠️ Token无效(401)，已自动清除，请重新配置');
+                }else if(msg.indexOf('403')!==-1) showToast('⚠️ API频率限制，请稍后重试');
+                else showToast('⚠️ 同步失败: '+msg);
+                self._renderGhTokenStatus();
+            });
+    },
+
+    revokeUser:function(name){
+        var self=this;
+        this.savePermissions('revokeUser',{adminPwd:this.adminPwd},{name:name},function(err,data){
+            if(err){showToast('❌ 删除失败: '+err.message);return;}
+            self.permissions=data;
+            self._renderUserList();
+            showToast('✅ 已删除用户: '+name);
+        });
+    },
+
+    changeAdminPwd:function(){
+        var oldPwd=document.getElementById('adminOldPwd').value;
+        var newPwd=document.getElementById('adminNewPwd2').value;
+        if(!oldPwd||!newPwd){this._showErr('adminPwdErr','请填写完整');return;}
+        if(newPwd.length<4){this._showErr('adminPwdErr','新密码至少4位');return;}
+        if(!this.verifyAdminPassword(oldPwd,this.permissions)){this._showErr('adminPwdErr','当前密码错误');return;}
+        var self=this;
+        this.savePermissions('changeAdminPwd',{oldAdminPwd:oldPwd},{
+            newAdminHash:this.hashPassword(newPwd)
+        },function(err,data){
+            if(err){self._showErr('adminPwdErr','保存失败: '+err.message);return;}
+            self.permissions=data;
+            self.adminPwd=newPwd;
+            localStorage.setItem(self.LS_PREFIX+'admin_pwd',newPwd);
+            document.getElementById('adminOldPwd').value='';
+            document.getElementById('adminNewPwd2').value='';
+            self._hideErr('adminPwdErr');
+            showToast('✅ 密码已修改');
+        });
+    },
+
+    showChangePwdModal:function(){
+        document.getElementById('userOldPwd').value='';
+        document.getElementById('userNewPwd').value='';
+        document.getElementById('userNewPwd2').value='';
+        this._hideErr('userChangePwdErr');
+        document.getElementById('userChangePwdModal').classList.add('show');
+    },
+    closeChangePwdModal:function(){
+        document.getElementById('userChangePwdModal').classList.remove('show');
+    },
+    userChangePwd:function(){
+        var oldPwd=document.getElementById('userOldPwd').value;
+        var newPwd=document.getElementById('userNewPwd').value;
+        var newPwd2=document.getElementById('userNewPwd2').value;
+        if(!oldPwd||!newPwd){this._showErr('userChangePwdErr','请填写完整');return;}
+        if(newPwd.length<4){this._showErr('userChangePwdErr','新密码至少4位');return;}
+        if(newPwd!==newPwd2){this._showErr('userChangePwdErr','两次密码不一致');return;}
+        var self=this;
+        var user=this.findUser(this.permissions,this.userName);
+        if(!user||!this.verifyUserPassword(oldPwd,user)){this._showErr('userChangePwdErr','当前密码错误');return;}
+        this.savePermissions('changeUserPwd',
+            {userName:this.userName,userPwd:oldPwd},
+            {newPwdHash:this.hashPassword(newPwd)},
+            function(err,data){
+                if(err){self._showErr('userChangePwdErr','修改失败: '+err.message);return;}
+                self.permissions=data;
+                localStorage.setItem(self.LS_PREFIX+'user_pwd',newPwd);
+                document.getElementById('userChangePwdModal').classList.remove('show');
+                showToast('✅ 密码修改成功');
+            });
+    },
+
+    _showErr:function(id,msg){
+        var el=document.getElementById(id);if(!el)return;
+        el.textContent=msg;el.classList.add('show');
+    },
+
+    _hideErr:function(id){
+        var el=document.getElementById(id);if(!el)return;
+        el.classList.remove('show');
+    },
+
+    _showAuthScreen:function(){
+        document.getElementById('authScreen').classList.remove('hidden');
+        document.getElementById('menuAuthMgmt').style.display='none';
+        document.getElementById('menuLogout').style.display='none';
+        document.getElementById('menuChangePwd').style.display='none';
+        document.getElementById('authUserPwd').value='';
+        this._hideErr('authUserErr');
+        this._hideErr('authAdminErr');
+        this._hideErr('authSetupErr');
+        this._hideErr('activateErr');
+    },
+
+    _enterApp:function(){
+        document.getElementById('authScreen').classList.add('hidden');
+        if(this.session==='admin'){
+            document.getElementById('menuAuthMgmt').style.display='';
+            document.getElementById('menuChangePwd').style.display='none';
+        }else{
+            document.getElementById('menuAuthMgmt').style.display='none';
+            document.getElementById('menuChangePwd').style.display='';
+        }
+        document.getElementById('menuLogout').style.display='';
+        this.startCDNCheck();
+        loadAllPhotosDB(function(ph){
+            D.photos=ph||{};
+            init();
+        });
+    },
+
+    _renderUserList:function(){
+        var list=document.getElementById('adminUserList');
+        if(!this.permissions||!this.permissions.users||!this.permissions.users.length){
+            list.innerHTML='<div style="color:var(--text2);font-size:13px;text-align:center;padding:12px">暂无用户</div>';
+            return;
+        }
+        var html='<div style="display:flex;gap:8px;margin-bottom:10px"><button class="export-btn" id="exportUsersBtn">📤 导出用户列表</button><button class="export-btn" id="syncGithubBtn2">🔄 同步</button><button class="export-btn" id="toggleUserListBtn">🔽 收起列表</button></div>';
+        html+='<div id="userListItems" style="max-height:300px;overflow-y:auto;transition:max-height 0.3s">';
+        this.permissions.users.forEach(function(u){
+            var dnStr=u.displayName?' <span style="font-size:12px;color:var(--text2)">('+u.displayName+')</span>':'';
+            var status='',statusStyle='';
+            if(u.active===false){status=u.pending?'待激活(已停用)':'已停用';statusStyle='color:var(--danger)';}
+            else if(u.pending){status='待激活';statusStyle='color:var(--warning,#e6a23c)';}
+            else{status='启用';statusStyle='color:var(--success,#67c23a)';}
+            html+='<div class="admin-user-item"><div><div class="admin-user-name">'+u.name+dnStr+' <span style="font-size:12px;'+statusStyle+'">'+status+'</span></div></div>';
+            if(u.active===false){
+                html+='<button class="admin-toggle-btn" data-toggle-id="'+u.name+'" data-toggle-active="true">启用</button> ';
+                html+='<button class="admin-revoke-btn" data-revoke-id="'+u.name+'">删除</button>';
+            }else{
+                html+='<button class="admin-toggle-btn" data-toggle-id="'+u.name+'" data-toggle-active="false">停用</button> ';
+            }
+            html+='</div>';
+        });
+        html+='</div>';
+        list.innerHTML=html;
+        list.querySelectorAll('[data-revoke-id]').forEach(function(btn){
+            btn.addEventListener('click',function(){AUTH.revokeUser(this.getAttribute('data-revoke-id'));});
+        });
+        list.querySelectorAll('[data-toggle-id]').forEach(function(btn){
+            btn.addEventListener('click',function(){
+                AUTH.toggleUser(this.getAttribute('data-toggle-id'),this.getAttribute('data-toggle-active')==='true');
+            });
+        });
+        var exportBtn=document.getElementById('exportUsersBtn');
+        if(exportBtn) exportBtn.addEventListener('click',function(){AUTH.exportUsers();});
+        var syncBtn2=document.getElementById('syncGithubBtn2');
+        if(syncBtn2) syncBtn2.addEventListener('click',function(){AUTH.syncFromGitHub();});
+        var toggleBtn=document.getElementById('toggleUserListBtn');
+        if(toggleBtn){
+            toggleBtn.addEventListener('click',function(){
+                var items=document.getElementById('userListItems');
+                if(items.style.maxHeight!=='0px'){
+                    items.style.maxHeight='0px';
+                    items.style.overflow='hidden';
+                    this.textContent='🔼 展开列表';
+                }else{
+                    items.style.maxHeight='300px';
+                    items.style.overflow='auto';
+                    this.textContent='🔽 收起列表';
+                }
+            });
+        }
+    },
+
+    _bindAuthEvents:function(){
+        var self=this;
+        document.getElementById('authTabUser').addEventListener('click',function(){self.switchTab('user');});
+        document.getElementById('authTabAdmin').addEventListener('click',function(){self.switchTab('admin');});
+        document.getElementById('authTabActivate').addEventListener('click',function(){self.switchTab('activate');});
+        document.getElementById('authUserLoginBtn').addEventListener('click',function(){self.userLogin();});
+        document.getElementById('authSetupBtn').addEventListener('click',function(){self.setupAdmin();});
+        document.getElementById('authAdminLoginBtn').addEventListener('click',function(){self.adminLogin();});
+        document.getElementById('activateBtn').addEventListener('click',function(){self.activateInvitation();});
+        document.getElementById('adminCloseBtn').addEventListener('click',function(){self.closeAdminPanel();});
+        document.getElementById('adminInviteBtn').addEventListener('click',function(){self.generateInvitations();});
+        document.getElementById('adminPwdBtn').addEventListener('click',function(){self.changeAdminPwd();});
+        document.getElementById('adminGhTokenBtn').addEventListener('click',function(){self.saveGhToken();});
+        document.getElementById('addToBatchBtn').addEventListener('click',function(){self.addToBatch();});
+        document.getElementById('importNamesBtn').addEventListener('click',function(){document.getElementById('importNamesFile').click();});
+        document.getElementById('importNamesFile').addEventListener('change',function(e){self.importNames(e);});
+        document.getElementById('menuAuthMgmt').addEventListener('click',function(){
+            document.getElementById('hdrMenu').classList.remove('show');
+            self.openAdminPanel();
+        });
+        document.getElementById('menuLogout').addEventListener('click',function(){
+            document.getElementById('hdrMenu').classList.remove('show');
+            self.doLogout();
+        });
+        document.getElementById('menuChangePwd').addEventListener('click',function(){self.showChangePwdModal();document.getElementById('hdrMenu').classList.remove('show');});
+        document.getElementById('userChangePwdBtn').addEventListener('click',function(){self.userChangePwd();});
+        document.getElementById('userChangePwdClose').addEventListener('click',function(){self.closeChangePwdModal();});
+        var _activateCodeTimer=null;
+        document.getElementById('activateCode').addEventListener('input',function(){
+            var code=this.value.trim().toUpperCase();
+            if(_activateCodeTimer)clearTimeout(_activateCodeTimer);
+            if(code.length===6){
+                var localData=null;
+                try{localData=JSON.parse(localStorage.getItem(self.LS_PREFIX+'permissions'));}catch(e){}
+                var localInv=localData&&localData.invitations&&localData.invitations.find(function(i){
+                    return i.code===code&&i.active!==false&&(!i.expiresAt||i.expiresAt>Date.now())&&!i.usedByName;
+                });
+                if(localInv&&localInv.userName){
+                    document.getElementById('activateName').value=localInv.userName;
+                }else{
+                    var memInv=self.permissions&&self.permissions.invitations&&self.permissions.invitations.find(function(i){
+                        return i.code===code&&i.active!==false&&(!i.expiresAt||i.expiresAt>Date.now())&&!i.usedByName;
+                    });
+                    if(memInv&&memInv.userName){
+                        document.getElementById('activateName').value=memInv.userName;
+                    }else{
+                        _activateCodeTimer=setTimeout(function(){
+                            var token=localStorage.getItem(self.LS_PREFIX+'gh_token');
+                            var headers={'Accept':'application/vnd.github.v3+json'};
+                            if(token) headers['Authorization']='token '+token;
+                            var apiUrl='https://api.github.com/repos/'+self.GH_OWNER+'/'+self.GH_REPO+'/contents/'+self.GH_FILE;
+                            fetch(apiUrl+'?t='+Date.now(),{headers:headers})
+                                .then(function(r){if(!r.ok)throw new Error('');return r.json();})
+                                .then(function(fileData){
+                                    var content=JSON.parse(decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,'')))));
+                                    var inv=content.invitations&&content.invitations.find(function(i){
+                                        return i.code===code&&i.active!==false&&(!i.expiresAt||i.expiresAt>Date.now())&&!i.usedByName;
+                                    });
+                                    document.getElementById('activateName').value=inv?(inv.userName||''):'';
+                                    if(content.users||content.invitations){
+                                        self.permissions=content;
+                                        localStorage.setItem(self.LS_PREFIX+'permissions',JSON.stringify(content));
+                                    }
+                                })
+                                .catch(function(){
+                                    document.getElementById('activateName').value='';
+                                });
+                        },500);
+                    }
+                }
+            }else{
+                document.getElementById('activateName').value='';
+            }
+        });
+        var changeLink=document.getElementById('ghTokenChangeLink');
+        if(changeLink) changeLink.addEventListener('click',function(){
+            document.getElementById('ghTokenInputArea').style.display='block';
+            this.style.display='none';
+        });
+    },
+
+    startAuthFlow:function(){
+        var self=this;
+        this._bindAuthEvents();
+        this.init();
+        this.fetchPermissions(function(perm){
+            if(!perm){
+                if(self.session==='admin'||self.session==='user'){
+                    self._enterApp();
+                    return;
+                }
+                self.permissions=null;
+                self._showAuthScreen();
+                self._showErr('authUserErr','无法连接服务器，请检查网络后重试');
+                return;
+            }
+            if(perm.notFound){
+                self.permissions=null;
+                document.getElementById('authAdminSetup').style.display='block';
+                document.getElementById('authAdminLogin').style.display='none';
+                self.switchTab('admin');
+                self._showAuthScreen();
+                return;
+            }
+            self.permissions=perm;
+            document.getElementById('authAdminSetup').style.display='none';
+            document.getElementById('authAdminLogin').style.display='block';
+            if(self.session==='user'&&self.userName){
+                var storedPwd=localStorage.getItem(self.LS_PREFIX+'user_pwd');
+                if(storedPwd){
+                    var user=self.findUser(perm,self.userName);
+                    if(user&&self.verifyUserPassword(storedPwd,user)){
+                        self._enterApp();
+                        return;
+                    }
+                }
+            }
+            if (self.session === 'admin') {
+                self.adminPwd = localStorage.getItem(self.LS_PREFIX + 'admin_pwd') || '';
+                if (self.adminPwd && self.verifyAdminPassword(self.adminPwd, perm)) {
+                    self._enterApp();
+                    return;
+                }
+            }
+            self._showAuthScreen();
+        });
+    }
 };
+
+// Auto-add password visibility toggle to all password inputs
+(function(){
+    document.querySelectorAll('input[type="password"]').forEach(function(input){
+        var wrap=document.createElement('div');
+        wrap.className='pwd-wrap';
+        input.parentNode.insertBefore(wrap,input);
+        wrap.appendChild(input);
+        var btn=document.createElement('button');
+        btn.type='button';
+        btn.className='pwd-toggle';
+        btn.textContent='👁';
+        btn.setAttribute('aria-label','显示/隐藏密码');
+        btn.addEventListener('click',function(){
+            if(input.type==='password'){
+                input.type='text';
+                btn.textContent='🙈';
+            }else{
+                input.type='password';
+                btn.textContent='👁';
+            }
+        });
+        wrap.appendChild(btn);
+    });
+})();
 
 AUTH.startAuthFlow();
 
